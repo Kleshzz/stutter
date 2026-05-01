@@ -1,6 +1,7 @@
 mod error;
 mod hypr;
 mod scheduler;
+mod config;
 
 #[macro_export]
 macro_rules! log {
@@ -15,7 +16,7 @@ use tokio::io::AsyncBufReadExt;
 use tokio::signal::unix::{SignalKind, signal};
 
 use error::{Result, StutterError};
-use scheduler::{DEFAULT_NICE, FOCUSED_NICE, set_priority};
+use scheduler::set_priority;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -23,6 +24,9 @@ async fn main() -> Result<()> {
 
     let mut reader = hypr::connect_events().await?;
     log!("[stutter] connected to event socket");
+
+    let cfg = config::load();
+    log!("[stutter] focused_nice={} default_nice={}", cfg.focused_nice, cfg.default_nice);
 
     let mut prev_pid: Option<u32> = None;
     let mut line = String::new();
@@ -48,14 +52,14 @@ async fn main() -> Result<()> {
                         Ok(new_pid) => {
                             if let Some(p) = prev_pid {
                                 if p != new_pid {
-                                    if let Err(e) = set_priority(p, DEFAULT_NICE) {
+                                    if let Err(e) = set_priority(p, cfg.default_nice) {
                                         log!("[stutter] failed to reset priority for pid {p}: {e}");
                                     }
                                 }
                             }
 
-                            match set_priority(new_pid, FOCUSED_NICE) {
-                                Ok(()) => log!("[stutter] pid {new_pid} → nice {FOCUSED_NICE}"),
+                            match set_priority(new_pid, cfg.focused_nice) {
+                                Ok(()) => log!("[stutter] pid {new_pid} → nice {}", cfg.focused_nice),
                                 Err(e) => log!("[stutter] failed to boost pid {new_pid}: {e}"),
                             }
 
@@ -82,7 +86,7 @@ async fn main() -> Result<()> {
     }
 
     if let Some(p) = prev_pid {
-        let _ = set_priority(p, DEFAULT_NICE);
+        let _ = set_priority(p, cfg.default_nice);
     }
 
     Ok(())
