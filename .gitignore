@@ -21,3 +21,6 @@ Thumbs.db
 *.rar
 *.7z
 *.tar.*
+
+# For now (Arch Linux)
+PKGBUILD
