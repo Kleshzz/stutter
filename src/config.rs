@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use serde::Deserialize;
+use std::path::PathBuf;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -10,8 +10,12 @@ pub struct Config {
     pub default_nice: i32,
 }
 
-fn default_focused_nice() -> i32 { -5 }
-fn default_default_nice() -> i32 { 0 }
+fn default_focused_nice() -> i32 {
+    -5
+}
+fn default_default_nice() -> i32 {
+    0
+}
 
 impl Default for Config {
     fn default() -> Self {
@@ -24,7 +28,12 @@ impl Default for Config {
 
 fn config_path() -> Option<PathBuf> {
     let home = std::env::var("HOME").ok()?;
-    Some(PathBuf::from(home).join(".config").join("stutter").join("config.toml"))
+    Some(
+        PathBuf::from(home)
+            .join(".config")
+            .join("stutter")
+            .join("config.toml"),
+    )
 }
 
 pub fn load() -> Config {

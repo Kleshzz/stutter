@@ -2,7 +2,6 @@
 
 use crate::error::{Result, StutterError};
 
-
 pub fn set_priority(pid: u32, nice: i32) -> Result<()> {
     let ret = unsafe { libc::setpriority(libc::PRIO_PROCESS, pid, nice) };
 

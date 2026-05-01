@@ -1,7 +1,7 @@
+mod config;
 mod error;
 mod hypr;
 mod scheduler;
-mod config;
 
 #[macro_export]
 macro_rules! log {
@@ -26,7 +26,11 @@ async fn main() -> Result<()> {
     log!("[stutter] connected to event socket");
 
     let cfg = config::load();
-    log!("[stutter] focused_nice={} default_nice={}", cfg.focused_nice, cfg.default_nice);
+    log!(
+        "[stutter] focused_nice={} default_nice={}",
+        cfg.focused_nice,
+        cfg.default_nice
+    );
 
     let mut prev_pid: Option<u32> = None;
     let mut line = String::new();
