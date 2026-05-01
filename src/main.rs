@@ -2,6 +2,13 @@ mod error;
 mod hypr;
 mod scheduler;
 
+macro_rules! log {
+    ($($arg:tt)*) => {
+        #[cfg(debug_assertions)]
+        eprintln!($($arg)*);
+    };
+}
+
 use tokio::io::AsyncBufReadExt;
 
 use error::{Result, StutterError};
@@ -9,10 +16,10 @@ use scheduler::{set_priority, DEFAULT_NICE, FOCUSED_NICE};
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    eprintln!("[stutter] starting...");
+    log!("[stutter] starting...");
 
     let mut reader = hypr::connect_events().await?;
-    eprintln!("[stutter] connected to event socket");
+    log!("[stutter] connected to event socket");
 
     let mut prev_pid: Option<u32> = None;
     let mut line = String::new();
@@ -22,7 +29,7 @@ async fn main() -> Result<()> {
         let n = reader.read_line(&mut line).await?;
 
         if n == 0 {
-            eprintln!("[stutter] event socket closed, exiting");
+            log!("[stutter] event socket closed, exiting");
             break;
         }
 
@@ -34,14 +41,14 @@ async fn main() -> Result<()> {
                     if let Some(p) = prev_pid {
                         if p != new_pid {
                             if let Err(e) = set_priority(p, DEFAULT_NICE) {
-                                eprintln!("[stutter] failed to reset priority for pid {p}: {e}");
+                                log!("[stutter] failed to reset priority for pid {p}: {e}");
                             }
                         }
                     }
 
                     match set_priority(new_pid, FOCUSED_NICE) {
-                        Ok(()) => eprintln!("[stutter] pid {new_pid} → nice {FOCUSED_NICE}"),
-                        Err(e) => eprintln!("[stutter] failed to boost pid {new_pid}: {e}"),
+                        Ok(()) => log!("[stutter] pid {new_pid} → nice {FOCUSED_NICE}"),
+                        Err(e) => log!("[stutter] failed to boost pid {new_pid}: {e}"),
                     }
 
                     prev_pid = Some(new_pid);
@@ -50,7 +57,7 @@ async fn main() -> Result<()> {
                     // Tab switch or empty workspace — nothing to boost
                 }
                 Err(e) => {
-                    eprintln!("[stutter] failed to get active window: {e}");
+                    log!("[stutter] failed to get active window: {e}");
                 }
             }
         }
