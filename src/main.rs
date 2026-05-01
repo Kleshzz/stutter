@@ -12,6 +12,7 @@ macro_rules! log {
 }
 
 use tokio::io::AsyncBufReadExt;
+use tokio::signal::unix::{SignalKind, signal};
 
 use error::{Result, StutterError};
 use scheduler::{DEFAULT_NICE, FOCUSED_NICE, set_priority};
@@ -26,41 +27,56 @@ async fn main() -> Result<()> {
     let mut prev_pid: Option<u32> = None;
     let mut line = String::new();
 
+    let mut sigterm = signal(SignalKind::terminate())?;
+    let mut sigint = signal(SignalKind::interrupt())?;
+
     loop {
         line.clear();
-        let n = reader.read_line(&mut line).await?;
 
-        if n == 0 {
-            log!("[stutter] event socket closed, exiting");
-            break;
-        }
+        tokio::select! {
+            n = reader.read_line(&mut line) => {
+                let n = n?;
+                if n == 0 {
+                    log!("[stutter] event socket closed, exiting");
+                    break;
+                }
 
-        let event = line.trim_end();
+                let event = line.trim_end();
 
-        if event.starts_with("activewindow>>") {
-            match hypr::get_active_window_pid().await {
-                Ok(new_pid) => {
-                    if let Some(p) = prev_pid {
-                        if p != new_pid {
-                            if let Err(e) = set_priority(p, DEFAULT_NICE) {
-                                log!("[stutter] failed to reset priority for pid {p}: {e}");
+                if event.starts_with("activewindow>>") {
+                    match hypr::get_active_window_pid().await {
+                        Ok(new_pid) => {
+                            if let Some(p) = prev_pid {
+                                if p != new_pid {
+                                    if let Err(e) = set_priority(p, DEFAULT_NICE) {
+                                        log!("[stutter] failed to reset priority for pid {p}: {e}");
+                                    }
+                                }
                             }
+
+                            match set_priority(new_pid, FOCUSED_NICE) {
+                                Ok(()) => log!("[stutter] pid {new_pid} → nice {FOCUSED_NICE}"),
+                                Err(e) => log!("[stutter] failed to boost pid {new_pid}: {e}"),
+                            }
+
+                            prev_pid = Some(new_pid);
+                        }
+                        Err(StutterError::NoActiveWindow) => {
+                            // Tab switch or empty workspace — nothing to boost
+                        }
+                        Err(e) => {
+                            log!("[stutter] failed to get active window: {e}");
                         }
                     }
-
-                    match set_priority(new_pid, FOCUSED_NICE) {
-                        Ok(()) => log!("[stutter] pid {new_pid} → nice {FOCUSED_NICE}"),
-                        Err(e) => log!("[stutter] failed to boost pid {new_pid}: {e}"),
-                    }
-
-                    prev_pid = Some(new_pid);
                 }
-                Err(StutterError::NoActiveWindow) => {
-                    // Tab switch or empty workspace — nothing to boost
-                }
-                Err(e) => {
-                    log!("[stutter] failed to get active window: {e}");
-                }
+            }
+            _ = sigterm.recv() => {
+                log!("[stutter] received SIGTERM, exiting");
+                break;
+            }
+            _ = sigint.recv() => {
+                log!("[stutter] received SIGINT, exiting");
+                break;
             }
         }
     }
