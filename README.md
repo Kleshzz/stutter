@@ -30,7 +30,7 @@ cargo build --release
 cp target/release/stutter ~/.local/bin/
 ```
 
-# Running as a systemd user service
+Running as a systemd user service:
 
 ```bash
 cp stutter.service ~/.config/systemd/user/
