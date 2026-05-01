@@ -10,10 +10,10 @@ pub struct Config {
     pub default_nice: i32,
 }
 
-fn default_focused_nice() -> i32 {
+const fn default_focused_nice() -> i32 {
     -5
 }
-fn default_default_nice() -> i32 {
+const fn default_default_nice() -> i32 {
     0
 }
 
