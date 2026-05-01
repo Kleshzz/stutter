@@ -47,18 +47,26 @@ impl Config {
             );
         }
 
+        if self.focused_nice >= self.default_nice {
+            eprintln!(
+                "[stutter] warning: focused_nice ({}) is >= default_nice ({}). \
+                 The focused window will not receive a higher priority.",
+                self.focused_nice, self.default_nice
+            );
+        }
+
         self
     }
 }
 
 fn config_path() -> Option<PathBuf> {
-    let home = std::env::var("HOME").ok()?;
-    Some(
-        PathBuf::from(home)
-            .join(".config")
-            .join("stutter")
-            .join("config.toml"),
-    )
+    let base = if let Ok(xdg) = std::env::var("XDG_CONFIG_HOME") {
+        PathBuf::from(xdg)
+    } else {
+        let home = std::env::var("HOME").ok()?;
+        PathBuf::from(home).join(".config")
+    };
+    Some(base.join("stutter").join("config.toml"))
 }
 
 pub fn load() -> Config {
