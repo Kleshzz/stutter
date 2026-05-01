@@ -25,7 +25,18 @@ sudo setcap cap_sys_nice+ep ~/.local/bin/stutter
 
 ## Installation
 
+### From GitHub Releases
+
+Download the latest pre-built binary from the [releases page](https://github.com/Kleshzz/stutter/releases), make it executable, and move it to your path:
+
+```bash
+chmod +x stutter
+mv stutter ~/.local/bin/
 ```
+
+### From Source
+
+```bash
 cargo build --release
 cp target/release/stutter ~/.local/bin/
 ```
