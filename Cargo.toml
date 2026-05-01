@@ -2,6 +2,7 @@
 name = "stutter"
 version = "0.1.0"
 edition = "2024"
+authors = ["Kleshzz"]
 description = "Focus-aware process priority daemon for Hyprland"
 keywords = ["hyprland", "wayland", "daemon", "priority", "nice"]
 categories = ["os", "command-line-utilities"]
@@ -11,7 +12,7 @@ repository = "https://github.com/Kleshzz/stutter"
 rust-version = "1.85.0"
 
 [dependencies]
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "io-util", "net", "signal", "time"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1.0"
 libc = "0.2"
