@@ -5,6 +5,7 @@ edition = "2021"
 description = "Focus-aware process priority daemon for Hyprland"
 license = "MIT"
 repository = "https://github.com/Kleshzz/stutter"
+rust-version = "1.81"
 
 [dependencies]
 tokio = { version = "1", features = ["full"] }

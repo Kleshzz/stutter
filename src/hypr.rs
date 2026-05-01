@@ -14,14 +14,10 @@ pub struct ActiveWindow {
 }
 
 fn socket_path(name: &str) -> Result<PathBuf> {
-    let runtime_dir = std::env::var("XDG_RUNTIME_DIR")
-        .map_err(|_| StutterError::NoRuntimeDir)?;
+    let runtime_dir = std::env::var("XDG_RUNTIME_DIR").map_err(|_| StutterError::NoRuntimeDir)?;
     let sig = std::env::var("HYPRLAND_INSTANCE_SIGNATURE")
         .map_err(|_| StutterError::NoInstanceSignature)?;
-    Ok(PathBuf::from(runtime_dir)
-        .join("hypr")
-        .join(sig)
-        .join(name))
+    Ok(PathBuf::from(runtime_dir).join("hypr").join(sig).join(name))
 }
 
 // connect to the event socket (.socket2.sock), returns a BufReader — read events from it line by line.

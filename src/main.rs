@@ -4,8 +4,9 @@ mod scheduler;
 
 macro_rules! log {
     ($($arg:tt)*) => {
-        #[cfg(debug_assertions)]
-        eprintln!($($arg)*);
+        if cfg!(debug_assertions) {
+            eprintln!($($arg)*);
+        }
     };
 }
 
