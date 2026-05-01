@@ -90,3 +90,58 @@ default_nice = 0
     let config: Config = toml::from_str(&content).unwrap_or_default();
     config.validate()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_values_are_valid() {
+        let cfg = Config::default();
+        assert_eq!(cfg.focused_nice, -5);
+        assert_eq!(cfg.default_nice, 0);
+    }
+
+    #[test]
+    fn validate_clamps_out_of_range() {
+        let cfg = Config {
+            focused_nice: -99,
+            default_nice: 100,
+        }
+        .validate();
+        assert_eq!(cfg.focused_nice, -20);
+        assert_eq!(cfg.default_nice, 19);
+    }
+
+    #[test]
+    fn validate_leaves_valid_values_unchanged() {
+        let cfg = Config {
+            focused_nice: -5,
+            default_nice: 0,
+        }
+        .validate();
+        assert_eq!(cfg.focused_nice, -5);
+        assert_eq!(cfg.default_nice, 0);
+    }
+
+    #[test]
+    fn parse_valid_toml() {
+        let cfg: Config = toml::from_str("focused_nice = -10\ndefault_nice = 5").unwrap();
+        assert_eq!(cfg.focused_nice, -10);
+        assert_eq!(cfg.default_nice, 5);
+    }
+
+    #[test]
+    fn parse_invalid_toml_falls_back_to_default() {
+        let cfg: Config = toml::from_str("not valid toml ][").unwrap_or_default();
+        assert_eq!(cfg.focused_nice, -5);
+        assert_eq!(cfg.default_nice, 0);
+    }
+
+    #[test]
+    fn parse_partial_toml_uses_defaults_for_missing_fields() {
+        let cfg: Config = toml::from_str("focused_nice = -15").unwrap();
+        assert_eq!(cfg.focused_nice, -15);
+        assert_eq!(cfg.default_nice, 0);
+    }
+}
