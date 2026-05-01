@@ -87,7 +87,14 @@ default_nice = 0
         return Config::default().validate();
     };
 
-    let config: Config = toml::from_str(&content).unwrap_or_default();
+    let config: Config = match toml::from_str(&content) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("[stutter] warning: failed to parse config file: {e}");
+            eprintln!("[stutter] warning: using default configuration");
+            Config::default()
+        }
+    };
     config.validate()
 }
 
