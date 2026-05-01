@@ -14,6 +14,17 @@ pub fn set_priority(pid: u32, nice: i32) -> Result<()> {
             return Ok(());
         }
 
+        if errno == libc::EPERM || errno == libc::EACCES {
+            static WARNED: std::sync::atomic::AtomicBool =
+                std::sync::atomic::AtomicBool::new(false);
+            if !WARNED.swap(true, std::sync::atomic::Ordering::Relaxed) {
+                eprintln!(
+                    "[stutter] error: Permission denied when setting priority for pid {pid}. Please ensure the binary has CAP_SYS_NICE capability or is run as root."
+                );
+            }
+            return Err(StutterError::Priority { pid, errno });
+        }
+
         return Err(StutterError::Priority { pid, errno });
     }
 
