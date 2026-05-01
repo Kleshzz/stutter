@@ -1,0 +1,11 @@
+[Unit]
+Description=Focus-aware process priority daemon for Hyprland
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+ExecStart=%h/.local/bin/stutter
+Restart=on-failure
+
+[Install]
+WantedBy=graphical-session.target

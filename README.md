@@ -30,26 +30,11 @@ cargo build --release
 cp target/release/stutter ~/.local/bin/
 ```
 
-## Running as a systemd user service
+# Running as a systemd user service
 
-Create `~/.config/systemd/user/stutter.service`:
-
-```ini
-[Unit]
-Description=Focus-aware process priority daemon for Hyprland
-After=graphical-session.target
-
-[Service]
-ExecStart=%h/.local/bin/stutter
-Restart=on-failure
-
-[Install]
-WantedBy=graphical-session.target
-```
-
-Then enable it:
-
-```
+```bash
+cp stutter.service ~/.config/systemd/user/
+systemctl --user daemon-reload
 systemctl --user enable --now stutter
 ```
 
