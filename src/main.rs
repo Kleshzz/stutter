@@ -13,7 +13,7 @@ macro_rules! log {
 use tokio::io::AsyncBufReadExt;
 
 use error::{Result, StutterError};
-use scheduler::{set_priority, DEFAULT_NICE, FOCUSED_NICE};
+use scheduler::{DEFAULT_NICE, FOCUSED_NICE, set_priority};
 
 #[tokio::main]
 async fn main() -> Result<()> {

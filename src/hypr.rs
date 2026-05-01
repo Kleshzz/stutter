@@ -39,7 +39,7 @@ pub async fn get_active_window_pid() -> Result<u32> {
     stream.read_to_string(&mut buf).await?;
 
     let buf = buf.trim();
-    eprintln!("[stutter] debug: raw response: '{}'", buf);
+    eprintln!("[stutter] debug: raw response: '{buf}'");
 
     if buf.is_empty() || buf == "{}" || buf == "unknown request" {
         return Err(StutterError::NoActiveWindow);

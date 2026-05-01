@@ -1,3 +1,5 @@
+#![allow(unsafe_code)]
+
 use crate::error::{Result, StutterError};
 
 pub const FOCUSED_NICE: i32 = -5;
