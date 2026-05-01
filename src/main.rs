@@ -22,9 +22,6 @@ use scheduler::set_priority;
 async fn main() -> Result<()> {
     log!("[stutter] starting...");
 
-    let mut reader = hypr::connect_events().await?;
-    log!("[stutter] connected to event socket");
-
     let cfg = config::load();
     log!(
         "[stutter] focused_nice={} default_nice={}",
@@ -39,59 +36,80 @@ async fn main() -> Result<()> {
     let mut sigint = signal(SignalKind::interrupt())?;
 
     loop {
-        line.clear();
+        let mut reader = match hypr::connect_events().await {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("[stutter] failed to connect to event socket: {e}, retrying in 3s");
+                tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+                continue;
+            }
+        };
+        log!("[stutter] connected to event socket");
 
-        tokio::select! {
-            n = reader.read_line(&mut line) => {
-                let n = n?;
-                if n == 0 {
-                    log!("[stutter] event socket closed, exiting");
-                    break;
-                }
+        loop {
+            line.clear();
 
-                let event = line.trim_end();
+            tokio::select! {
+                res = reader.read_line(&mut line) => {
+                    let n = match res {
+                        Ok(n) => n,
+                        Err(e) => {
+                            log!("[stutter] socket error: {e}, reconnecting in 3s");
+                            tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+                            break;
+                        }
+                    };
 
-                if event.starts_with("activewindow>>") {
-                    match hypr::get_active_window_pid().await {
-                        Ok(new_pid) => {
-                            if let Some(p) = prev_pid {
-                                if p != new_pid {
-                                    if let Err(e) = set_priority(p, cfg.default_nice) {
-                                        log!("[stutter] failed to reset priority for pid {p}: {e}");
+                    if n == 0 {
+                        log!("[stutter] event socket closed, reconnecting in 3s");
+                        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+                        break;
+                    }
+
+                    let event = line.trim_end();
+
+                    if event.starts_with("activewindow>>") {
+                        match hypr::get_active_window_pid().await {
+                            Ok(new_pid) => {
+                                if let Some(p) = prev_pid {
+                                    if p != new_pid {
+                                        if let Err(e) = set_priority(p, cfg.default_nice) {
+                                            log!("[stutter] failed to reset priority for pid {p}: {e}");
+                                        }
                                     }
                                 }
-                            }
 
-                            match set_priority(new_pid, cfg.focused_nice) {
-                                Ok(()) => log!("[stutter] pid {new_pid} → nice {}", cfg.focused_nice),
-                                Err(e) => log!("[stutter] failed to boost pid {new_pid}: {e}"),
-                            }
+                                match set_priority(new_pid, cfg.focused_nice) {
+                                    Ok(()) => log!("[stutter] pid {new_pid} → nice {}", cfg.focused_nice),
+                                    Err(e) => log!("[stutter] failed to boost pid {new_pid}: {e}"),
+                                }
 
-                            prev_pid = Some(new_pid);
-                        }
-                        Err(StutterError::NoActiveWindow) => {
-                            // Tab switch or empty workspace — nothing to boost
-                        }
-                        Err(e) => {
-                            log!("[stutter] failed to get active window: {e}");
+                                prev_pid = Some(new_pid);
+                            }
+                            Err(StutterError::NoActiveWindow) => {
+                                // Tab switch or empty workspace — nothing to boost
+                            }
+                            Err(e) => {
+                                log!("[stutter] failed to get active window: {e}");
+                            }
                         }
                     }
                 }
-            }
-            _ = sigterm.recv() => {
-                log!("[stutter] received SIGTERM, exiting");
-                break;
-            }
-            _ = sigint.recv() => {
-                log!("[stutter] received SIGINT, exiting");
-                break;
+                _ = sigterm.recv() => {
+                    log!("[stutter] received SIGTERM, exiting");
+                    if let Some(p) = prev_pid {
+                        let _ = set_priority(p, cfg.default_nice);
+                    }
+                    return Ok(());
+                }
+                _ = sigint.recv() => {
+                    log!("[stutter] received SIGINT, exiting");
+                    if let Some(p) = prev_pid {
+                        let _ = set_priority(p, cfg.default_nice);
+                    }
+                    return Ok(());
+                }
             }
         }
     }
-
-    if let Some(p) = prev_pid {
-        let _ = set_priority(p, cfg.default_nice);
-    }
-
-    Ok(())
 }
