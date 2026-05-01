@@ -1,1 +1,23 @@
+# Rust
 /target
+**/*.rs.bk
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+desktop.ini
+.DS_Store
+Thumbs.db
+
+# Misc
+*~
+*.bak
+*.log
+*.zip
+*.rar
+*.7z
+*.tar.*
