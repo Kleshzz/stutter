@@ -2,6 +2,7 @@ mod error;
 mod hypr;
 mod scheduler;
 
+#[macro_export]
 macro_rules! log {
     ($($arg:tt)*) => {
         if cfg!(debug_assertions) {

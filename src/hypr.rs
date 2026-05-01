@@ -5,12 +5,9 @@ use tokio::net::UnixStream;
 
 use crate::error::{Result, StutterError};
 
-#[allow(dead_code)]
 #[derive(Debug, serde::Deserialize)]
 pub struct ActiveWindow {
     pub pid: u32,
-    pub class: String,
-    pub title: String,
 }
 
 fn socket_path(name: &str) -> Result<PathBuf> {
@@ -39,7 +36,7 @@ pub async fn get_active_window_pid() -> Result<u32> {
     stream.read_to_string(&mut buf).await?;
 
     let buf = buf.trim();
-    eprintln!("[stutter] debug: raw response: '{buf}'");
+    crate::log!("[stutter] debug: raw response: '{buf}'");
 
     if buf.is_empty() || buf == "{}" || buf == "unknown request" {
         return Err(StutterError::NoActiveWindow);

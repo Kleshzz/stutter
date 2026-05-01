@@ -13,7 +13,7 @@ pub fn set_priority(pid: u32, nice: i32) -> Result<()> {
 
         // ESRCH = process no longer exists, skip silently
         if errno == libc::ESRCH {
-            eprintln!("[stutter] pid {pid} not found (ESRCH), skipping");
+            crate::log!("[stutter] pid {pid} not found (ESRCH), skipping");
             return Ok(());
         }
 
