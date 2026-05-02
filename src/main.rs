@@ -95,15 +95,8 @@ async fn main() -> Result<()> {
                         }
                     }
                 }
-                _ = sigterm.recv() => {
-                    log!("[stutter] received SIGTERM, exiting");
-                    if let Some(p) = prev_pid {
-                        let _ = set_priority(p, cfg.default_nice);
-                    }
-                    return Ok(());
-                }
-                _ = sigint.recv() => {
-                    log!("[stutter] received SIGINT, exiting");
+                () = async { tokio::select! { _ = sigterm.recv() => {}, _ = sigint.recv() => {} } } => {
+                    log!("[stutter] received termination signal, exiting");
                     if let Some(p) = prev_pid {
                         let _ = set_priority(p, cfg.default_nice);
                     }
