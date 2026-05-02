@@ -66,7 +66,7 @@ jobs:
           cat changelog.md
 
       - name: Upload changelog artifact
-        uses: actions/upload-artifact@v8
+        uses: actions/upload-artifact@v7
         with:
           name: changelog
           path: changelog.md
