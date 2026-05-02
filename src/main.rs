@@ -30,6 +30,7 @@ async fn main() -> Result<()> {
     );
 
     let mut prev_pid: Option<u32> = None;
+    let mut prev_addr: Option<String> = None;
     let mut line = String::new();
 
     let mut sigterm = signal(SignalKind::terminate())?;
@@ -70,8 +71,8 @@ async fn main() -> Result<()> {
                     let event = line.trim_end();
 
                     if event.starts_with("activewindow>>") {
-                        match hypr::get_active_window_pid().await {
-                            Ok(new_pid) => {
+                        match hypr::get_active_window().await {
+                            Ok((new_pid, new_addr)) => {
                                 if let Some(p) = prev_pid {
                                     if p != new_pid {
                                         if let Err(e) = set_priority(p, cfg.default_nice) {
@@ -86,6 +87,7 @@ async fn main() -> Result<()> {
                                 }
 
                                 prev_pid = Some(new_pid);
+                                prev_addr = Some(new_addr);
                             }
                             Err(StutterError::NoActiveWindow) => {
                                 // Tab switch or empty workspace — nothing to boost
@@ -93,6 +95,11 @@ async fn main() -> Result<()> {
                             Err(e) => {
                                 log!("[stutter] failed to get active window: {e}");
                             }
+                        }
+                    } else if let Some(addr) = event.strip_prefix("closewindow>>") {
+                        if Some(addr) == prev_addr.as_deref() {
+                            prev_pid = None;
+                            prev_addr = None;
                         }
                     }
                 }

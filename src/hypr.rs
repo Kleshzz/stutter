@@ -8,6 +8,7 @@ use crate::error::{Result, StutterError};
 #[derive(Debug, serde::Deserialize)]
 pub struct ActiveWindow {
     pub pid: u32,
+    pub address: String,
 }
 
 fn socket_path(name: &str) -> Result<PathBuf> {
@@ -24,8 +25,8 @@ pub async fn connect_events() -> Result<BufReader<UnixStream>> {
     Ok(BufReader::new(stream))
 }
 
-// query the PID of the active window via the command socket (.socket.sock)
-pub async fn get_active_window_pid() -> Result<u32> {
+// query the PID and address of the active window via the command socket (.socket.sock)
+pub async fn get_active_window() -> Result<(u32, String)> {
     let path = socket_path(".socket.sock")?;
     let mut stream = UnixStream::connect(path).await?;
 
@@ -49,5 +50,5 @@ pub async fn get_active_window_pid() -> Result<u32> {
         return Err(StutterError::NoActiveWindow);
     }
 
-    Ok(window.pid)
+    Ok((window.pid, window.address))
 }
