@@ -20,7 +20,10 @@ Thumbs.db
 *.zip
 *.rar
 *.7z
-*.tar.*
+*.tar.gz
+*.tar.xz
+*.tar.bz2
+*.tar.zst
 TODO
 
 # For now (Arch Linux)

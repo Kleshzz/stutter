@@ -6,5 +6,6 @@
 *.lock text
 *.yml text
 *.yaml text
+*.service text
 
 Cargo.lock text linguist-generated
