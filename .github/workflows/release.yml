@@ -43,6 +43,8 @@ jobs:
             local prefix="$1"
             git log $RANGE --pretty=format:"%s" \
               | grep "^${prefix}" \
+              | grep -v "bump version" \
+              | grep -v "update lock" \
               | sed "s/^${prefix}[^:]*: /- /" \
               | sort
           }
@@ -50,13 +52,11 @@ jobs:
           FEATURES=$(get_section "feat")
           FIXES=$(get_section "fix")
           REFACTORS=$(get_section "refactor")
-          CHORES=$(get_section "chore")
 
           BODY=""
           [ -n "$FEATURES" ]  && BODY="${BODY}## Features\n${FEATURES}\n\n"
           [ -n "$FIXES" ]     && BODY="${BODY}## Bug Fixes\n${FIXES}\n\n"
           [ -n "$REFACTORS" ] && BODY="${BODY}## Refactors\n${REFACTORS}\n\n"
-          [ -n "$CHORES" ]    && BODY="${BODY}## Chores\n${CHORES}\n\n"
 
           if [ -z "$BODY" ]; then
             BODY="No notable changes."
