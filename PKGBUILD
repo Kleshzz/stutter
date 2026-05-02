@@ -9,7 +9,7 @@ license=('MIT')
 depends=('gcc-libs' 'glibc')
 makedepends=('cargo' 'git')
 provides=('stutter')
-conflicts=('stutter' 'stutter-daemon')
+conflicts=('stutter-daemon')
 source=("stutter::git+$url.git")
 sha256sums=('SKIP')
 
