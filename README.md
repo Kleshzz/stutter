@@ -12,9 +12,9 @@ makes the active window feel more responsive under load.
 
 ## How it works
 
-stutter connects to Hyprland's event socket and listens for `activewindow`
-events. On each focus change it calls `setpriority(2)` to set the focused
-process to nice `-5` and resets the previously focused process back to `0`.
+stutter connects to your compositor's IPC socket and listens for focus change
+events. On each focus change it calls setpriority(2) to set the focused
+process to nice -5 and resets the previously focused process back to 0.
 On exit, the last focused process is restored to the default priority.
 
 ## Supported backends
@@ -81,6 +81,11 @@ systemctl --user enable --now stutter
 **hyprland.conf:**
 ```
 exec-once = stutter
+```
+
+**niri (config.kdl):**
+```kdl
+spawn-at-startup "stutter"
 ```
 
 ## License
