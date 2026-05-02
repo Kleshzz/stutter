@@ -1,0 +1,10 @@
+changelog:
+  categories:
+    - title: "Features"
+      labels: ["feat", "feature"]
+    - title: "Bug Fixes"
+      labels: ["fix", "bug"]
+    - title: "Refactors"
+      labels: ["refactor"]
+    - title: "Dependencies"
+      labels: ["deps", "dependencies"]
