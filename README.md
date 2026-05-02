@@ -24,7 +24,7 @@ On exit, the last focused process is restored to the default priority.
   `CAP_SYS_NICE`:
 
 ```
-sudo setcap cap_sys_nice+ep ~/.local/bin/stutter
+sudo setcap cap_sys_nice+ep /usr/bin/stutter
 ```
 
 ## Installation
@@ -39,8 +39,8 @@ paru -S stutter-daemon
 ### Pre-built binary
 ```bash
 curl -L https://github.com/Kleshzz/stutter/releases/latest/download/stutter \
-  -o ~/.local/bin/stutter
-chmod +x ~/.local/bin/stutter
+  -o /tmp/stutter
+sudo install -Dm755 /tmp/stutter /usr/bin/stutter
 ```
 
 ### From source
@@ -48,7 +48,7 @@ chmod +x ~/.local/bin/stutter
 cargo install stutter-daemon
 # or build manually:
 cargo build --release
-cp target/release/stutter ~/.local/bin/
+sudo install -Dm755 target/release/stutter /usr/bin/stutter
 ```
 
 ## Setup
@@ -56,7 +56,7 @@ cp target/release/stutter ~/.local/bin/
 ### Grant permissions (pick one)
 ```bash
 # Option A - capability (recommended)
-sudo setcap cap_sys_nice+ep ~/.local/bin/stutter
+sudo setcap cap_sys_nice+ep /usr/bin/stutter
 
 # Option B - run as root (not recommended)
 ```
@@ -65,7 +65,12 @@ sudo setcap cap_sys_nice+ep ~/.local/bin/stutter
 
 **systemd (recommended):**
 ```bash
+# AUR install — service is already in place:
+systemctl --user enable --now stutter
+
+# Manual install — copy service file first:
 cp stutter.service ~/.config/systemd/user/
+systemctl --user daemon-reload
 systemctl --user enable --now stutter
 ```
 

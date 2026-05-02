@@ -46,7 +46,7 @@ package() {
   install -Dm755 "target/release/stutter" "$pkgdir/usr/bin/stutter"
 
   # systemd user service
-  install -Dm644 "stutter.service" "$pkgdir/usr/lib/systemd/user/stutter.service"
+  install -Dm644 "pkg/stutter.service" "$pkgdir/usr/lib/systemd/user/stutter.service"
 
   # license
   install -Dm644 "LICENSE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
