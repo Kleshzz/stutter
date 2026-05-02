@@ -1,5 +1,9 @@
 # stutter
 
+[![Crates.io](https://img.shields.io/crates/v/stutter-daemon.svg)](https://crates.io/crates/stutter-daemon)
+[![CI](https://github.com/Kleshzz/stutter/actions/workflows/ci.yml/badge.svg)](https://github.com/Kleshzz/stutter/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Kleshzz/stutter)](https://github.com/Kleshzz/stutter/releases)
+
 A focus-aware process priority daemon for Hyprland.
 
 When you switch windows, stutter automatically raises the CPU priority of the
