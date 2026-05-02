@@ -67,7 +67,7 @@ jobs:
           ref: main
 
       - name: Update AUR package
-        uses: KSXGitHub/github-actions-deploy-aur@v2
+        uses: KSXGitHub/github-actions-deploy-aur@v3
         with:
           pkgname: stutter-git
           pkgbuild: ./pkg/PKGBUILD
