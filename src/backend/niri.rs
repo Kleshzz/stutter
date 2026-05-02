@@ -72,6 +72,7 @@ impl WmBackend for NiriBackend {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::unwrap_used)]
     use super::*;
 
     fn parse_event(json: &str) -> Option<FocusEvent> {
