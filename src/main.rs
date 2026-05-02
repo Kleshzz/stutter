@@ -22,7 +22,7 @@ use scheduler::set_priority;
 async fn main() -> Result<()> {
     log!("[stutter] starting...");
 
-    let cfg = config::load();
+    let mut cfg = config::load();
     log!(
         "[stutter] focused_nice={} default_nice={}",
         cfg.focused_nice,
@@ -34,6 +34,7 @@ async fn main() -> Result<()> {
 
     let mut sigterm = signal(SignalKind::terminate())?;
     let mut sigint = signal(SignalKind::interrupt())?;
+    let mut sighup = signal(SignalKind::hangup())?;
 
     loop {
         let mut reader = match hypr::connect_events().await {
@@ -101,6 +102,15 @@ async fn main() -> Result<()> {
                         let _ = set_priority(p, cfg.default_nice);
                     }
                     return Ok(());
+                }
+                _ = sighup.recv() => {
+                    log!("[stutter] received SIGHUP, reloading config");
+                    cfg = config::load();
+                    log!(
+                        "[stutter] reloaded config: focused_nice={} default_nice={}",
+                        cfg.focused_nice,
+                        cfg.default_nice
+                    );
                 }
             }
         }
