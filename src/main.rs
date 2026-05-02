@@ -22,6 +22,66 @@ async fn wait_shutdown(sigterm: &mut Signal, sigint: &mut Signal) {
     tokio::select! { _ = sigterm.recv() => {}, _ = sigint.recv() => {} }
 }
 
+fn reset_prev(
+    prev_pid: &mut Option<u32>,
+    prev_addr: &mut Option<String>,
+    default_nice: i32,
+    reason: &str,
+) {
+    if let Some(p) = prev_pid.take() {
+        if let Err(e) = set_priority(p, default_nice) {
+            log!("[stutter] failed to reset priority for pid {p}: {e}");
+        } else {
+            log!("[stutter] pid {p} → nice {default_nice} ({reason})");
+        }
+    }
+    prev_addr.take();
+}
+
+async fn handle_event(
+    event: &str,
+    cmd_socket_path: &std::path::Path,
+    cfg: &config::Config,
+    prev_pid: &mut Option<u32>,
+    prev_addr: &mut Option<String>,
+) {
+    if event.starts_with("activewindow>>") {
+        match hypr::get_active_window(cmd_socket_path).await {
+            Ok((new_pid, new_addr)) => {
+                if let Some(p) = *prev_pid {
+                    if p != new_pid {
+                        reset_prev(prev_pid, prev_addr, cfg.default_nice, "reset");
+                    }
+                }
+                match set_priority(new_pid, cfg.focused_nice) {
+                    Ok(()) => log!("[stutter] pid {new_pid} → nice {}", cfg.focused_nice),
+                    Err(e) => log!("[stutter] failed to boost pid {new_pid}: {e}"),
+                }
+                *prev_pid = Some(new_pid);
+                *prev_addr = Some(new_addr);
+            }
+            Err(StutterError::NoActiveWindow) => {
+                // Tab switch or empty workspace — nothing to boost
+            }
+            Err(e) => {
+                log!("[stutter] failed to get active window: {e}");
+            }
+        }
+    } else if let Some(addr) = event.strip_prefix("closewindow>>") {
+        if Some(addr) == prev_addr.as_deref() {
+            prev_pid.take();
+            prev_addr.take();
+        }
+    } else if event.starts_with("workspace>>") {
+        reset_prev(
+            prev_pid,
+            prev_addr,
+            cfg.default_nice,
+            "reset on workspace switch",
+        );
+    }
+}
+
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     log!("[stutter] starting...");
@@ -75,42 +135,13 @@ async fn main() -> Result<()> {
                         break;
                     }
 
-                    let event = line.trim_end();
-
-                    if event.starts_with("activewindow>>") {
-                        match hypr::get_active_window(&cmd_socket_path).await {
-                            Ok((new_pid, new_addr)) => {
-                                if let Some(p) = prev_pid {
-                                    if p != new_pid {
-                                        if let Err(e) = set_priority(p, cfg.default_nice) {
-                                            log!("[stutter] failed to reset priority for pid {p}: {e}");
-                                        } else {
-                                            log!("[stutter] pid {p} → nice {} (reset)", cfg.default_nice);
-                                        }
-                                    }
-                                }
-
-                                match set_priority(new_pid, cfg.focused_nice) {
-                                    Ok(()) => log!("[stutter] pid {new_pid} → nice {}", cfg.focused_nice),
-                                    Err(e) => log!("[stutter] failed to boost pid {new_pid}: {e}"),
-                                }
-
-                                prev_pid = Some(new_pid);
-                                prev_addr = Some(new_addr);
-                            }
-                            Err(StutterError::NoActiveWindow) => {
-                                // Tab switch or empty workspace — nothing to boost
-                            }
-                            Err(e) => {
-                                log!("[stutter] failed to get active window: {e}");
-                            }
-                        }
-                    } else if let Some(addr) = event.strip_prefix("closewindow>>") {
-                        if Some(addr) == prev_addr.as_deref() {
-                            prev_pid = None;
-                            prev_addr = None;
-                        }
-                    }
+                    handle_event(
+                        line.trim_end(),
+                        &cmd_socket_path,
+                        &cfg,
+                        &mut prev_pid,
+                        &mut prev_addr,
+                    ).await;
                 }
                 () = wait_shutdown(&mut sigterm, &mut sigint) => {
                     log!("[stutter] received termination signal, exiting");
