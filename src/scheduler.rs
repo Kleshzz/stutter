@@ -1,5 +1,7 @@
 #![allow(unsafe_code)]
 
+use tracing::{debug, error};
+
 use crate::error::{Result, StutterError};
 
 static WARNED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
@@ -7,16 +9,14 @@ static WARNED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::ne
 fn handle_errno(pid: u32, errno: i32, action: &str) -> Result<()> {
     // ESRCH = process no longer exists, skip silently
     if errno == libc::ESRCH {
-        crate::log!("[stutter] pid {pid} not found (ESRCH), skipping");
+        debug!("pid {pid} not found (ESRCH), skipping");
         return Ok(());
     }
 
     if (errno == libc::EPERM || errno == libc::EACCES)
         && !WARNED.swap(true, std::sync::atomic::Ordering::Relaxed)
     {
-        eprintln!(
-            "[stutter] error: Permission denied when {action} priority for pid {pid}. Please ensure the binary has CAP_SYS_NICE capability or is run as root."
-        );
+        error!("permission denied when {action} priority for pid {pid}. ensure CAP_SYS_NICE or root");
     }
 
     Err(StutterError::Priority { pid, errno })

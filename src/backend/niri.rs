@@ -4,6 +4,7 @@ use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
     net::UnixStream,
 };
+use tracing::debug;
 
 use super::{FocusEvent, WmBackend};
 use crate::error::{Result, StutterError};
@@ -23,7 +24,7 @@ impl NiriBackend {
         // consume the handshake response
         let mut handshake = String::new();
         reader.read_line(&mut handshake).await?;
-        crate::log!("[stutter] niri handshake: {}", handshake.trim());
+        debug!("niri handshake: {}", handshake.trim());
 
         Ok(Self {
             reader,
@@ -113,7 +114,7 @@ mod tests {
 
     #[test]
     fn focus_lost_returns_none() {
-        // window = null означает фокус ушёл (пустой workspace)
+        // window = null means focus lost (empty workspace)
         let json = r#"{"WindowFocusChanged":{"window":null}}"#;
         assert!(parse_event(json).is_none());
     }

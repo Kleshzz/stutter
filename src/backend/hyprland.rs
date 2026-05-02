@@ -4,6 +4,7 @@ use tokio::{
     io::{AsyncReadExt, AsyncWriteExt, BufReader},
     net::UnixStream,
 };
+use tracing::debug;
 
 use crate::error::{Result, StutterError};
 
@@ -19,7 +20,7 @@ pub fn get_socket_path(name: &str) -> Result<PathBuf> {
     Ok(PathBuf::from(runtime_dir).join("hypr").join(sig).join(name))
 }
 
-// connect to the event socket (.socket2.sock), returns a BufReader — read events from it line by line.
+// connect to the event socket (.socket2.sock), returns a BufReader - read events from it line by line.
 pub async fn connect_events(path: &std::path::Path) -> Result<BufReader<UnixStream>> {
     let stream = UnixStream::connect(path).await?;
     Ok(BufReader::new(stream))
@@ -36,7 +37,7 @@ pub async fn get_active_window(path: &std::path::Path) -> Result<(u32, String)> 
     stream.read_to_string(&mut buf).await?;
 
     let buf = buf.trim();
-    crate::log!("[stutter] debug: raw response: '{buf}'");
+    debug!(raw_response = buf);
 
     if buf.is_empty() || buf == "{}" || buf == "unknown request" {
         return Err(StutterError::NoActiveWindow);
@@ -80,7 +81,7 @@ impl WmBackend for HyprlandBackend {
             self.line.clear();
             let n = self.reader.read_line(&mut self.line).await?;
             if n == 0 {
-                return Ok(None); // сокет закрылся
+                return Ok(None); // socket closed
             }
             let event = self.line.trim_end();
             if event.starts_with("activewindow>>") {
