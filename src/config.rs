@@ -1,6 +1,12 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use serde::Deserialize;
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct AppConfig {
+    pub focused_nice: Option<i32>,
+}
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -9,6 +15,9 @@ pub struct Config {
 
     #[serde(default = "default_default_nice")]
     pub default_nice: i32,
+
+    #[serde(default)]
+    pub apps: HashMap<String, AppConfig>,
 }
 
 const fn default_focused_nice() -> i32 {
@@ -23,6 +32,7 @@ impl Default for Config {
         Self {
             focused_nice: default_focused_nice(),
             default_nice: default_default_nice(),
+            apps: HashMap::new(),
         }
     }
 }
@@ -56,7 +66,24 @@ impl Config {
             );
         }
 
+        for (name, app) in &mut self.apps {
+            if let Some(ref mut n) = app.focused_nice {
+                let orig = *n;
+                *n = (*n).clamp(-20, 19);
+                if *n != orig {
+                    eprintln!("[stutter] warning: apps.{name}.focused_nice ({orig}) clamped to {n}");
+                }
+            }
+        }
+
         self
+    }
+
+    pub fn focused_nice_for(&self, class: &str) -> i32 {
+        self.apps
+            .get(class)
+            .and_then(|a| a.focused_nice)
+            .unwrap_or(self.focused_nice)
     }
 }
 
@@ -85,7 +112,7 @@ pub fn load() -> Config {
 # CPU priority of the focused window (lower = higher priority, min -20)
 focused_nice = -5
 
-# CPU priority of all other windows
+# CPU priority of all other windows (restored when window loses focus)
 default_nice = 0
 ";
         let _ = std::fs::write(&path, default_content);
@@ -124,6 +151,7 @@ mod tests {
         let cfg = Config {
             focused_nice: -99,
             default_nice: 100,
+            ..Default::default()
         }
         .validate();
         assert_eq!(cfg.focused_nice, -20);
@@ -135,6 +163,7 @@ mod tests {
         let cfg = Config {
             focused_nice: -5,
             default_nice: 0,
+            ..Default::default()
         }
         .validate();
         assert_eq!(cfg.focused_nice, -5);
@@ -167,6 +196,7 @@ mod tests {
         let cfg = Config {
             focused_nice: 0,
             default_nice: 0,
+            ..Default::default()
         }
         .validate();
         assert_eq!(cfg.focused_nice, 0);
@@ -178,8 +208,25 @@ mod tests {
         let cfg = Config {
             focused_nice: 5,
             default_nice: 0,
+            ..Default::default()
         }
         .validate();
         assert_eq!(cfg.focused_nice, 5);
+    }
+
+    #[test]
+    fn per_app_override_is_used() {
+        let cfg: Config =
+            toml::from_str("focused_nice = -5\ndefault_nice = 0\n[apps]\nfirefox = { focused_nice = -10 }")
+                .unwrap();
+        assert_eq!(cfg.focused_nice_for("firefox"), -10);
+        assert_eq!(cfg.focused_nice_for("kitty"), -5);
+    }
+
+    #[test]
+    fn per_app_without_focused_nice_falls_back_to_global() {
+        let cfg: Config =
+            toml::from_str("focused_nice = -5\ndefault_nice = 0\n[apps]\nfirefox = {}").unwrap();
+        assert_eq!(cfg.focused_nice_for("firefox"), -5);
     }
 }

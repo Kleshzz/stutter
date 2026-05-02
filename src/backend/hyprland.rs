@@ -12,6 +12,7 @@ use crate::error::{Result, StutterError};
 pub struct ActiveWindow {
     pub pid: u32,
     pub address: String,
+    pub class: String,
 }
 
 pub fn get_socket_path(name: &str) -> Result<PathBuf> {
@@ -27,7 +28,7 @@ pub async fn connect_events(path: &std::path::Path) -> Result<BufReader<UnixStre
 }
 
 // query the PID and address of the active window via the command socket (.socket.sock)
-pub async fn get_active_window(path: &std::path::Path) -> Result<(u32, String)> {
+pub async fn get_active_window(path: &std::path::Path) -> Result<(u32, String, String)> {
     let mut stream = UnixStream::connect(path).await?;
 
     stream.write_all(b"j/activewindow").await?;
@@ -50,7 +51,11 @@ pub async fn get_active_window(path: &std::path::Path) -> Result<(u32, String)> 
         return Err(StutterError::NoActiveWindow);
     }
 
-    Ok((window.pid, window.address.trim_start_matches("0x").to_owned()))
+    Ok((
+        window.pid,
+        window.address.trim_start_matches("0x").to_owned(),
+        window.class,
+    ))
 }
 
 use super::{FocusEvent, WmBackend};
@@ -86,7 +91,7 @@ impl WmBackend for HyprlandBackend {
             let event = self.line.trim_end();
             if event.starts_with("activewindow>>") {
                 match get_active_window(&self.cmd_socket_path).await {
-                    Ok((pid, addr)) => return Ok(Some(FocusEvent { pid, addr })),
+                    Ok((pid, addr, class)) => return Ok(Some(FocusEvent { pid, addr, class })),
                     Err(crate::error::StutterError::NoActiveWindow) => {}
                     Err(e) => return Err(e),
                 }
@@ -100,7 +105,7 @@ mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
 
-    fn parse_window(json: &str) -> Result<(u32, String)> {
+    fn parse_window(json: &str) -> Result<(u32, String, String)> {
         let buf = json.trim();
         if buf.is_empty() || buf == "{}" || buf == "unknown request" {
             return Err(StutterError::NoActiveWindow);
@@ -109,15 +114,20 @@ mod tests {
         if window.pid == 0 {
             return Err(StutterError::NoActiveWindow);
         }
-        Ok((window.pid, window.address.trim_start_matches("0x").to_owned()))
+        Ok((
+            window.pid,
+            window.address.trim_start_matches("0x").to_owned(),
+            window.class,
+        ))
     }
 
     #[test]
     fn parses_active_window() {
         let json = r#"{"pid":1234,"address":"0xdeadbeef","class":"kitty","title":"~"}"#;
-        let (pid, addr) = parse_window(json).unwrap();
+        let (pid, addr, class) = parse_window(json).unwrap();
         assert_eq!(pid, 1234);
         assert_eq!(addr, "deadbeef");
+        assert_eq!(class, "kitty");
     }
 
     #[test]
@@ -139,14 +149,14 @@ mod tests {
     #[test]
     fn address_strips_0x_prefix() {
         let json = r#"{"pid":99,"address":"0xABCD","class":"x","title":"y"}"#;
-        let (_, addr) = parse_window(json).unwrap();
+        let (_, addr, _) = parse_window(json).unwrap();
         assert_eq!(addr, "ABCD");
     }
 
     #[test]
     fn address_without_0x_prefix_unchanged() {
         let json = r#"{"pid":1,"address":"ABCD","class":"x","title":"y"}"#;
-        let (_, addr) = parse_window(json).unwrap();
+        let (_, addr, _) = parse_window(json).unwrap();
         assert_eq!(addr, "ABCD");
     }
 }

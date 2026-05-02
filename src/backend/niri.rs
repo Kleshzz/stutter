@@ -56,6 +56,7 @@ struct WindowFocusChanged {
 struct NiriWindow {
     id: u64,
     pid: Option<u32>,
+    app_id: Option<String>,
 }
 
 impl WmBackend for NiriBackend {
@@ -70,12 +71,18 @@ impl WmBackend for NiriBackend {
                 continue;
             };
             if let Some(WindowFocusChanged {
-                window: Some(NiriWindow { pid: Some(pid), id }),
+                window:
+                    Some(NiriWindow {
+                        pid: Some(pid),
+                        id,
+                        app_id,
+                    }),
             }) = event.window_focus_changed
             {
                 return Ok(Some(FocusEvent {
                     pid,
                     addr: id.to_string(),
+                    class: app_id.unwrap_or_default(),
                 }));
             }
         }
@@ -92,12 +99,18 @@ mod tests {
             return None;
         };
         if let Some(WindowFocusChanged {
-            window: Some(NiriWindow { pid: Some(pid), id }),
+            window:
+                Some(NiriWindow {
+                    pid: Some(pid),
+                    id,
+                    app_id,
+                }),
         }) = event.window_focus_changed
         {
             Some(FocusEvent {
                 pid,
                 addr: id.to_string(),
+                class: app_id.unwrap_or_default(),
             })
         } else {
             None
@@ -135,5 +148,19 @@ mod tests {
     fn window_without_pid_returns_none() {
         let json = r#"{"WindowFocusChanged":{"window":{"id":42}}}"#;
         assert!(parse_event(json).is_none());
+    }
+
+    #[test]
+    fn parses_app_id_as_class() {
+        let json = r#"{"WindowFocusChanged":{"window":{"id":1,"pid":99,"app_id":"firefox"}}}"#;
+        let event = parse_event(json).unwrap();
+        assert_eq!(event.class, "firefox");
+    }
+
+    #[test]
+    fn missing_app_id_gives_empty_class() {
+        let json = r#"{"WindowFocusChanged":{"window":{"id":1,"pid":99}}}"#;
+        let event = parse_event(json).unwrap();
+        assert_eq!(event.class, "");
     }
 }

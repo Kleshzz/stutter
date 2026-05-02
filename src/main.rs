@@ -107,9 +107,13 @@ async fn main() -> Result<()> {
                                     reset_prev(&mut prev_pid, &mut prev_addr, cfg.default_nice, "reset", dry_run);
                                 }
                             }
-                            match set_priority(event.pid, cfg.focused_nice, dry_run) {
+                            let focused_nice = cfg.focused_nice_for(&event.class);
+                            match set_priority(event.pid, focused_nice, dry_run) {
                                 Ok(()) if !dry_run => {
-                                    info!("pid {} → nice {}", event.pid, cfg.focused_nice);
+                                    info!(
+                                        "pid {} ({}) → nice {}",
+                                        event.pid, event.class, focused_nice
+                                    );
                                 }
                                 Ok(()) => {}
                                 Err(e) => error!("failed to boost pid {}: {e}", event.pid),

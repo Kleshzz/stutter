@@ -6,6 +6,7 @@ use crate::error::Result;
 pub struct FocusEvent {
     pub pid: u32,
     pub addr: String,
+    pub class: String,
 }
 
 pub trait WmBackend: Send {

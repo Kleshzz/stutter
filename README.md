@@ -22,6 +22,33 @@ On exit, the last focused process is restored to the default priority.
 - Hyprland
 - Niri
 
+## Configuration
+
+The configuration file is located at `~/.config/stutter/config.toml`. It is
+automatically created with default values on the first run.
+
+```toml
+# CPU priority of the focused window (lower = higher priority, min -20)
+focused_nice = -5
+
+# CPU priority of all other windows (restored when window loses focus)
+default_nice = 0
+
+# Per-app overrides (optional)
+# The key is the window class or app_id
+[apps]
+"kitty" = { focused_nice = -10 }
+"firefox" = { focused_nice = -2 }
+```
+
+You can reload the configuration without restarting the daemon by sending a
+`SIGHUP` signal:
+```bash
+pkill -HUP stutter
+# or via systemd
+systemctl --user reload stutter
+```
+
 ## Requirements
 
 - Permission to lower nice values - either run as root, or grant the binary
