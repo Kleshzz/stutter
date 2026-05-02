@@ -18,7 +18,7 @@ use tokio::signal::unix::{SignalKind, signal};
 use error::{Result, StutterError};
 use scheduler::set_priority;
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     log!("[stutter] starting...");
 
