@@ -1,7 +1,9 @@
 use std::path::PathBuf;
 
-use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader};
-use tokio::net::UnixStream;
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt, BufReader},
+    net::UnixStream,
+};
 
 use crate::error::{Result, StutterError};
 
@@ -13,8 +15,7 @@ pub struct ActiveWindow {
 
 pub fn get_socket_path(name: &str) -> Result<PathBuf> {
     let runtime_dir = std::env::var("XDG_RUNTIME_DIR").map_err(|_| StutterError::NoRuntimeDir)?;
-    let sig = std::env::var("HYPRLAND_INSTANCE_SIGNATURE")
-        .map_err(|_| StutterError::NoInstanceSignature)?;
+    let sig = std::env::var("HYPRLAND_INSTANCE_SIGNATURE").map_err(|_| StutterError::NoInstanceSignature)?;
     Ok(PathBuf::from(runtime_dir).join("hypr").join(sig).join(name))
 }
 
@@ -48,10 +49,7 @@ pub async fn get_active_window(path: &std::path::Path) -> Result<(u32, String)> 
         return Err(StutterError::NoActiveWindow);
     }
 
-    Ok((
-        window.pid,
-        window.address.trim_start_matches("0x").to_owned(),
-    ))
+    Ok((window.pid, window.address.trim_start_matches("0x").to_owned()))
 }
 
 use super::{FocusEvent, WmBackend};
@@ -110,10 +108,7 @@ mod tests {
         if window.pid == 0 {
             return Err(StutterError::NoActiveWindow);
         }
-        Ok((
-            window.pid,
-            window.address.trim_start_matches("0x").to_owned(),
-        ))
+        Ok((window.pid, window.address.trim_start_matches("0x").to_owned()))
     }
 
     #[test]
@@ -126,14 +121,8 @@ mod tests {
 
     #[test]
     fn empty_response_is_no_active_window() {
-        assert!(matches!(
-            parse_window("{}"),
-            Err(StutterError::NoActiveWindow)
-        ));
-        assert!(matches!(
-            parse_window(""),
-            Err(StutterError::NoActiveWindow)
-        ));
+        assert!(matches!(parse_window("{}"), Err(StutterError::NoActiveWindow)));
+        assert!(matches!(parse_window(""), Err(StutterError::NoActiveWindow)));
         assert!(matches!(
             parse_window("unknown request"),
             Err(StutterError::NoActiveWindow)
@@ -143,10 +132,7 @@ mod tests {
     #[test]
     fn pid_zero_is_no_active_window() {
         let json = r#"{"pid":0,"address":"0x0","class":"","title":""}"#;
-        assert!(matches!(
-            parse_window(json),
-            Err(StutterError::NoActiveWindow)
-        ));
+        assert!(matches!(parse_window(json), Err(StutterError::NoActiveWindow)));
     }
 
     #[test]

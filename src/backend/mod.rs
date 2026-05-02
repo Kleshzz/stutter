@@ -19,9 +19,7 @@ pub enum Backend {
 
 pub async fn detect() -> Result<Backend> {
     if std::env::var("HYPRLAND_INSTANCE_SIGNATURE").is_ok() {
-        return Ok(Backend::Hyprland(
-            hyprland::HyprlandBackend::connect().await?,
-        ));
+        return Ok(Backend::Hyprland(hyprland::HyprlandBackend::connect().await?));
     }
     if std::env::var("NIRI_SOCKET").is_ok()
         || std::env::var("XDG_RUNTIME_DIR")

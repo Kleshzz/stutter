@@ -1,2 +1,11 @@
 edition = "2024"
-max_width = 100
+unstable_features = true
+newline_style = "Unix"
+max_width = 110
+comment_width = 110
+wrap_comments = true
+group_imports = "StdExternalCrate"
+imports_granularity = "Crate"
+trailing_semicolon = true
+format_code_in_doc_comments = true
+normalize_comments = true

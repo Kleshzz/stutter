@@ -38,9 +38,7 @@ pub fn set_priority(pid: u32, nice: i32, dry_run: bool) -> Result<()> {
     }
 
     if dry_run {
-        println!(
-            "[stutter] [DRY RUN] would set pid {pid} to nice {nice} (current: {current_nice})"
-        );
+        println!("[stutter] [DRY RUN] would set pid {pid} to nice {nice} (current: {current_nice})");
         return Ok(());
     }
 

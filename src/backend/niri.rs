@@ -1,8 +1,12 @@
+use std::path::PathBuf;
+
+use tokio::{
+    io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+    net::UnixStream,
+};
+
 use super::{FocusEvent, WmBackend};
 use crate::error::{Result, StutterError};
-use std::path::PathBuf;
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::UnixStream;
 
 pub struct NiriBackend {
     reader: BufReader<UnixStream>,

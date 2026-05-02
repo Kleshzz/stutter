@@ -12,11 +12,10 @@ macro_rules! log {
     };
 }
 
-use tokio::signal::unix::{Signal, SignalKind, signal};
-
 use backend::{Backend, WmBackend};
 use error::Result;
 use scheduler::set_priority;
+use tokio::signal::unix::{Signal, SignalKind, signal};
 
 async fn wait_shutdown(sigterm: &mut Signal, sigint: &mut Signal) {
     tokio::select! { _ = sigterm.recv() => {}, _ = sigint.recv() => {} }
