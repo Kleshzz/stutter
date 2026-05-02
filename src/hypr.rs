@@ -50,5 +50,5 @@ pub async fn get_active_window() -> Result<(u32, String)> {
         return Err(StutterError::NoActiveWindow);
     }
 
-    Ok((window.pid, window.address))
+    Ok((window.pid, window.address.trim_start_matches("0x").to_owned()))
 }

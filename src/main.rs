@@ -81,6 +81,8 @@ async fn main() -> Result<()> {
                                     if p != new_pid {
                                         if let Err(e) = set_priority(p, cfg.default_nice) {
                                             log!("[stutter] failed to reset priority for pid {p}: {e}");
+                                        } else {
+                                            log!("[stutter] pid {p} → nice {} (reset)", cfg.default_nice);
                                         }
                                     }
                                 }
