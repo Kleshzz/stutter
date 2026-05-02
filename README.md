@@ -17,9 +17,13 @@ events. On each focus change it calls `setpriority(2)` to set the focused
 process to nice `-5` and resets the previously focused process back to `0`.
 On exit, the last focused process is restored to the default priority.
 
-## Requirements
+## Supported backends
 
 - Hyprland
+- Niri
+
+## Requirements
+
 - Permission to lower nice values - either run as root, or grant the binary
   `CAP_SYS_NICE`:
 
