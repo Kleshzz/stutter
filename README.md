@@ -29,34 +29,47 @@ sudo setcap cap_sys_nice+ep ~/.local/bin/stutter
 
 ## Installation
 
-### From GitHub Releases
-
-Download the latest pre-built binary from the [releases page](https://github.com/Kleshzz/stutter/releases), make it executable, and move it to your path:
-
+### AUR (recommended)
 ```bash
-chmod +x stutter
-mv stutter ~/.local/bin/
+yay -S stutter-daemon
+# or
+paru -S stutter-daemon
 ```
 
-### From Source
-
+### Pre-built binary
 ```bash
+curl -L https://github.com/Kleshzz/stutter/releases/latest/download/stutter \
+  -o ~/.local/bin/stutter
+chmod +x ~/.local/bin/stutter
+```
+
+### From source
+```bash
+cargo install stutter-daemon
+# or build manually:
 cargo build --release
 cp target/release/stutter ~/.local/bin/
 ```
 
-### Running as a systemd user service:
+## Setup
 
+### Grant permissions (pick one)
+```bash
+# Option A - capability (recommended)
+sudo setcap cap_sys_nice+ep ~/.local/bin/stutter
+
+# Option B - run as root (not recommended)
+```
+
+### Autostart
+
+**systemd (recommended):**
 ```bash
 cp stutter.service ~/.config/systemd/user/
-systemctl --user daemon-reload
 systemctl --user enable --now stutter
 ```
 
-## Hyprland autostart
-
-Alternatively, add to your `hyprland.conf`:
-
+**hyprland.conf:**
 ```
 exec-once = stutter
 ```

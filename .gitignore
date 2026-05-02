@@ -25,6 +25,3 @@ Thumbs.db
 *.tar.bz2
 *.tar.zst
 TODO
-
-# For now (Arch Linux)
-PKGBUILD

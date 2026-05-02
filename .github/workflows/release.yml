@@ -108,3 +108,22 @@ jobs:
         run: cargo publish --no-verify
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+
+  aur:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Update AUR package
+        uses: KSXGitHub/github-actions-deploy-aur@v4
+        with:
+          pkgname: stutter-git
+          pkgbuild: ./PKGBUILD
+          commit_username: github-actions[bot]
+          commit_email: 41898282+github-actions[bot]@users.noreply.github.com
+          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+          commit_message: "chore: update to ${{ github.ref_name }}"
+          force_push: true
