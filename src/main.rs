@@ -13,10 +13,14 @@ macro_rules! log {
 }
 
 use tokio::io::AsyncBufReadExt;
-use tokio::signal::unix::{SignalKind, signal};
+use tokio::signal::unix::{Signal, SignalKind, signal};
 
 use error::{Result, StutterError};
 use scheduler::set_priority;
+
+async fn wait_shutdown(sigterm: &mut Signal, sigint: &mut Signal) {
+    tokio::select! { _ = sigterm.recv() => {}, _ = sigint.recv() => {} }
+}
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
@@ -103,7 +107,7 @@ async fn main() -> Result<()> {
                         }
                     }
                 }
-                () = async { tokio::select! { _ = sigterm.recv() => {}, _ = sigint.recv() => {} } } => {
+                () = wait_shutdown(&mut sigterm, &mut sigint) => {
                     log!("[stutter] received termination signal, exiting");
                     if let Some(p) = prev_pid {
                         let _ = set_priority(p, cfg.default_nice);
