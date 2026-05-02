@@ -22,7 +22,7 @@ fn handle_errno(pid: u32, errno: i32, action: &str) -> Result<()> {
     Err(StutterError::Priority { pid, errno })
 }
 
-pub fn set_priority(pid: u32, nice: i32) -> Result<()> {
+pub fn set_priority(pid: u32, nice: i32, dry_run: bool) -> Result<()> {
     unsafe { *libc::__errno_location() = 0 };
     let current_nice = unsafe { libc::getpriority(libc::PRIO_PROCESS, pid) };
 
@@ -34,6 +34,13 @@ pub fn set_priority(pid: u32, nice: i32) -> Result<()> {
     }
 
     if current_nice == nice {
+        return Ok(());
+    }
+
+    if dry_run {
+        println!(
+            "[stutter] [DRY RUN] would set pid {pid} to nice {nice} (current: {current_nice})"
+        );
         return Ok(());
     }
 

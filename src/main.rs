@@ -27,11 +27,12 @@ fn reset_prev(
     prev_addr: &mut Option<String>,
     default_nice: i32,
     reason: &str,
+    dry_run: bool,
 ) {
     if let Some(p) = prev_pid.take() {
-        if let Err(e) = set_priority(p, default_nice) {
+        if let Err(e) = set_priority(p, default_nice, dry_run) {
             log!("[stutter] failed to reset priority for pid {p}: {e}");
-        } else {
+        } else if !dry_run {
             log!("[stutter] pid {p} → nice {default_nice} ({reason})");
         }
     }
@@ -44,17 +45,21 @@ async fn handle_event(
     cfg: &config::Config,
     prev_pid: &mut Option<u32>,
     prev_addr: &mut Option<String>,
+    dry_run: bool,
 ) {
     if event.starts_with("activewindow>>") {
         match hypr::get_active_window(cmd_socket_path).await {
             Ok((new_pid, new_addr)) => {
                 if let Some(p) = *prev_pid {
                     if p != new_pid {
-                        reset_prev(prev_pid, prev_addr, cfg.default_nice, "reset");
+                        reset_prev(prev_pid, prev_addr, cfg.default_nice, "reset", dry_run);
                     }
                 }
-                match set_priority(new_pid, cfg.focused_nice) {
-                    Ok(()) => log!("[stutter] pid {new_pid} → nice {}", cfg.focused_nice),
+                match set_priority(new_pid, cfg.focused_nice, dry_run) {
+                    Ok(()) if !dry_run => {
+                        log!("[stutter] pid {new_pid} → nice {}", cfg.focused_nice);
+                    }
+                    Ok(()) => {}
                     Err(e) => log!("[stutter] failed to boost pid {new_pid}: {e}"),
                 }
                 *prev_pid = Some(new_pid);
@@ -78,13 +83,19 @@ async fn handle_event(
             prev_addr,
             cfg.default_nice,
             "reset on workspace switch",
+            dry_run,
         );
     }
 }
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
-    log!("[stutter] starting...");
+    let dry_run = std::env::args().any(|arg| arg == "--dry-run");
+    if dry_run {
+        println!("[stutter] starting in dry-run mode");
+    } else {
+        log!("[stutter] starting...");
+    }
 
     let mut cfg = config::load();
     log!(
@@ -141,12 +152,13 @@ async fn main() -> Result<()> {
                         &cfg,
                         &mut prev_pid,
                         &mut prev_addr,
+                        dry_run,
                     ).await;
                 }
                 () = wait_shutdown(&mut sigterm, &mut sigint) => {
                     log!("[stutter] received termination signal, exiting");
                     if let Some(p) = prev_pid {
-                        let _ = set_priority(p, cfg.default_nice);
+                        let _ = set_priority(p, cfg.default_nice, dry_run);
                     }
                     return Ok(());
                 }
