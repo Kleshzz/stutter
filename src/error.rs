@@ -17,6 +17,9 @@ pub enum StutterError {
 
     #[error("priority syscall failed for pid {pid}: errno {errno}")]
     Priority { pid: u32, errno: i32 },
+
+    #[error("no supported WM detected (set HYPRLAND_INSTANCE_SIGNATURE or NIRI_SOCKET)")]
+    NoWmDetected,
 }
 
 pub type Result<T> = std::result::Result<T, StutterError>;

@@ -4,7 +4,7 @@
 [![CI](https://github.com/Kleshzz/stutter/actions/workflows/ci.yml/badge.svg)](https://github.com/Kleshzz/stutter/actions/workflows/ci.yml)
 [![Rust](https://img.shields.io/badge/rust-1.85%2B-orange.svg)](https://www.rust-lang.org)
 
-A focus-aware process priority daemon for Hyprland.
+A focus-aware process priority daemon.
 
 When you switch windows, stutter automatically raises the CPU priority of the
 focused process and restores the previous one. This reduces input latency and
