@@ -8,14 +8,14 @@ on:
       - "src/**"
       - "Cargo.toml"
       - "Cargo.lock"
-      - ".github/workflows/**"
+      - ".github/workflows/ci.yml"
   pull_request:
     branches: ["**"]
     paths:
       - "src/**"
       - "Cargo.toml"
       - "Cargo.lock"
-      - ".github/workflows/**"
+      - ".github/workflows/ci.yml*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
