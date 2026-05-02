@@ -2,6 +2,8 @@
 
 use crate::error::{Result, StutterError};
 
+static WARNED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
 pub fn set_priority(pid: u32, nice: i32) -> Result<()> {
     unsafe { *libc::__errno_location() = 0 };
     let current_nice = unsafe { libc::getpriority(libc::PRIO_PROCESS, pid) };
@@ -16,8 +18,6 @@ pub fn set_priority(pid: u32, nice: i32) -> Result<()> {
             }
 
             if errno == libc::EPERM || errno == libc::EACCES {
-                static WARNED: std::sync::atomic::AtomicBool =
-                    std::sync::atomic::AtomicBool::new(false);
                 if !WARNED.swap(true, std::sync::atomic::Ordering::Relaxed) {
                     eprintln!(
                         "[stutter] error: Permission denied when getting priority for pid {pid}. Please ensure the binary has CAP_SYS_NICE capability or is run as root."
@@ -46,8 +46,6 @@ pub fn set_priority(pid: u32, nice: i32) -> Result<()> {
         }
 
         if errno == libc::EPERM || errno == libc::EACCES {
-            static WARNED: std::sync::atomic::AtomicBool =
-                std::sync::atomic::AtomicBool::new(false);
             if !WARNED.swap(true, std::sync::atomic::Ordering::Relaxed) {
                 eprintln!(
                     "[stutter] error: Permission denied when setting priority for pid {pid}. Please ensure the binary has CAP_SYS_NICE capability or is run as root."

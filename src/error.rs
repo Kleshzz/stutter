@@ -15,7 +15,7 @@ pub enum StutterError {
     #[error("JSON parse error: {0}")]
     Json(#[from] serde_json::Error),
 
-    #[error("setpriority failed for pid {pid}: errno {errno}")]
+    #[error("priority syscall failed for pid {pid}: errno {errno}")]
     Priority { pid: u32, errno: i32 },
 }
 
