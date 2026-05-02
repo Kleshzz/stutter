@@ -14,8 +14,15 @@ impl NiriBackend {
         let path = niri_socket_path()?;
         let mut stream = UnixStream::connect(&path).await?;
         stream.write_all(b"{\"EventStream\":null}\n").await?;
+
+        let mut reader = BufReader::new(stream);
+        // consume the handshake response
+        let mut handshake = String::new();
+        reader.read_line(&mut handshake).await?;
+        crate::log!("[stutter] niri handshake: {}", handshake.trim());
+
         Ok(Self {
-            reader: BufReader::new(stream),
+            reader,
             line: String::new(),
         })
     }

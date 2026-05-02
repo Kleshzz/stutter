@@ -1,5 +1,5 @@
 [Unit]
-Description=Focus-aware process priority daemon for Hyprland
+Description=Focus-aware process priority daemon
 PartOf=graphical-session.target
 After=graphical-session.target
 
