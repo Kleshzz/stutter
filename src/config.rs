@@ -160,4 +160,25 @@ mod tests {
         assert_eq!(cfg.focused_nice, -15);
         assert_eq!(cfg.default_nice, 0);
     }
+
+    #[test]
+    fn focused_nice_equal_to_default_nice_is_warned_but_valid() {
+        let cfg = Config {
+            focused_nice: 0,
+            default_nice: 0,
+        }
+        .validate();
+        assert_eq!(cfg.focused_nice, 0);
+        assert_eq!(cfg.default_nice, 0);
+    }
+
+    #[test]
+    fn focused_nice_greater_than_default_nice_is_warned_but_valid() {
+        let cfg = Config {
+            focused_nice: 5,
+            default_nice: 0,
+        }
+        .validate();
+        assert_eq!(cfg.focused_nice, 5);
+    }
 }

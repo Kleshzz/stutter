@@ -155,4 +155,11 @@ mod tests {
         let (_, addr) = parse_window(json).unwrap();
         assert_eq!(addr, "ABCD");
     }
+
+    #[test]
+    fn address_without_0x_prefix_unchanged() {
+        let json = r#"{"pid":1,"address":"ABCD","class":"x","title":"y"}"#;
+        let (_, addr) = parse_window(json).unwrap();
+        assert_eq!(addr, "ABCD");
+    }
 }
