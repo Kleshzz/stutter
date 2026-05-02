@@ -41,8 +41,11 @@ async fn main() -> Result<()> {
     let mut sigint = signal(SignalKind::interrupt())?;
     let mut sighup = signal(SignalKind::hangup())?;
 
+    let event_socket_path = hypr::get_socket_path(".socket2.sock")?;
+    let cmd_socket_path = hypr::get_socket_path(".socket.sock")?;
+
     loop {
-        let mut reader = match hypr::connect_events().await {
+        let mut reader = match hypr::connect_events(&event_socket_path).await {
             Ok(r) => r,
             Err(e) => {
                 eprintln!("[stutter] failed to connect to event socket: {e}, retrying in 3s");
@@ -75,7 +78,7 @@ async fn main() -> Result<()> {
                     let event = line.trim_end();
 
                     if event.starts_with("activewindow>>") {
-                        match hypr::get_active_window().await {
+                        match hypr::get_active_window(&cmd_socket_path).await {
                             Ok((new_pid, new_addr)) => {
                                 if let Some(p) = prev_pid {
                                     if p != new_pid {
