@@ -33,6 +33,48 @@ fn reset_prev(
     current_boosted_nice.take();
 }
 
+fn handle_focus_event(
+    event: backend::FocusEvent,
+    prev_pid: &mut Option<u32>,
+    prev_addr: &mut Option<String>,
+    current_boosted_nice: &mut Option<i32>,
+    cfg: &config::Config,
+    dry_run: bool,
+) {
+    if *prev_pid == Some(event.pid) && prev_addr.as_deref() == Some(&event.addr) {
+        return;
+    }
+
+    if *prev_pid == Some(event.pid) {
+        info!(
+            "focus moved to another window of pid {} ({})",
+            event.pid, event.class
+        );
+    } else {
+        reset_prev(
+            prev_pid,
+            prev_addr,
+            current_boosted_nice,
+            cfg.default_nice,
+            "reset",
+            dry_run,
+        );
+    }
+
+    let focused_nice = cfg.focused_nice_for(&event.class);
+    if *current_boosted_nice != Some(focused_nice) {
+        if let Err(e) = set_priority(event.pid, focused_nice, dry_run) {
+            error!("failed to boost pid {}: {e}", event.pid);
+        } else if !dry_run {
+            info!("pid {} ({}) → nice {}", event.pid, event.class, focused_nice);
+        }
+        *current_boosted_nice = Some(focused_nice);
+    }
+
+    *prev_pid = Some(event.pid);
+    *prev_addr = Some(event.addr);
+}
+
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt()
@@ -96,7 +138,16 @@ async fn main() -> Result<()> {
                         default_nice = cfg.default_nice,
                         "reloaded config"
                     );
+                    reset_prev(
+                        &mut prev_pid,
+                        &mut prev_addr,
+                        &mut current_boosted_nice,
+                        cfg.default_nice,
+                        "sighup reset",
+                        dry_run,
+                    );
                 }
+
                 result = async {
                     match &mut wm {
                         Backend::Hyprland(b) => b.next_focus_event().await,
@@ -105,39 +156,16 @@ async fn main() -> Result<()> {
                 } => {
                     match result {
                         Ok(Some(event)) => {
-                            if prev_pid == Some(event.pid) && prev_addr.as_ref() == Some(&event.addr) {
-                                continue;
-                            }
-
-                            if prev_pid != Some(event.pid) {
-                                reset_prev(
-                                    &mut prev_pid,
-                                    &mut prev_addr,
-                                    &mut current_boosted_nice,
-                                    cfg.default_nice,
-                                    "reset",
-                                    dry_run,
-                                );
-                            } else {
-                                info!("focus moved to another window of pid {} ({})", event.pid, event.class);
-                            }
-
-                            let focused_nice = cfg.focused_nice_for(&event.class);
-                            if current_boosted_nice != Some(focused_nice) {
-                                if let Err(e) = set_priority(event.pid, focused_nice, dry_run) {
-                                    error!("failed to boost pid {}: {e}", event.pid);
-                                } else if !dry_run {
-                                    info!(
-                                        "pid {} ({}) → nice {}",
-                                        event.pid, event.class, focused_nice
-                                    );
-                                }
-                                current_boosted_nice = Some(focused_nice);
-                            }
-
-                            prev_pid = Some(event.pid);
-                            prev_addr = Some(event.addr);
+                            handle_focus_event(
+                                event,
+                                &mut prev_pid,
+                                &mut prev_addr,
+                                &mut current_boosted_nice,
+                                &cfg,
+                                dry_run,
+                            );
                         }
+
 
                         Ok(None) => {
                             warn!("WM socket closed, reconnecting in 3s");
