@@ -103,7 +103,7 @@ async fn main() -> Result<()> {
                     match result {
                         Ok(Some(event)) => {
                             if let Some(p) = prev_pid {
-                                if p != event.pid {
+                                if p != event.pid || prev_addr.as_ref() != Some(&event.addr) {
                                     reset_prev(&mut prev_pid, &mut prev_addr, cfg.default_nice, "reset", dry_run);
                                 }
                             }
