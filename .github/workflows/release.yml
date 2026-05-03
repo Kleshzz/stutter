@@ -100,6 +100,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Update PKGBUILD version
+        run: |
+          VERSION=${{ github.event.inputs.tag || github.ref_name }}
+          VERSION=${VERSION#v}
+          HASH=$(git rev-parse --short HEAD)
+          COUNT=$(git rev-list --count HEAD)
+          PKGVER="${VERSION}.r${COUNT}.g${HASH}"
+          sed -i "s/^pkgver=.*/pkgver=${PKGVER}/" /tmp/aur-pkg/PKGBUILD
+
       - name: Generate .SRCINFO
         run: |
           docker run --rm -v /tmp/aur-pkg:/pkg archlinux:latest bash -c "
