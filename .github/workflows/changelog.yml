@@ -21,37 +21,6 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Debug FIX var
-        env:
-          TAG_NAME: ${{ inputs.tag }}
-        run: |
-          PREV_TAG=$(git describe --tags --abbrev=0 "${TAG_NAME}^" 2>/dev/null || echo "")
-          RANGE="${PREV_TAG}..${TAG_NAME}"
-
-          echo "=== raw fix commits ==="
-          git log $RANGE --pretty=format:"%s (%h)" --grep="^fix"
-
-          echo "=== after grep -v ==="
-          git log $RANGE --pretty=format:"%s (%h)" --grep="^fix" | grep -v "^fix(dev)"
-
-          echo "=== after sed ==="
-          git log $RANGE --pretty=format:"%s (%h)" --grep="^fix" | grep -v "^fix(dev)" | sed 's|^fix: ||;s|^fix([^)]*): ||'
-
-          echo "=== after awk ==="
-          FIX=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^fix" \
-            | grep -v "^fix(dev)" \
-            | sed 's|^fix: ||;s|^fix([^)]*): ||' \
-            | awk '{ print "- " toupper(substr($0,1,1)) substr($0,2) }')
-
-          echo "FIX value: '$FIX'"
-          echo "FIX length: ${#FIX}"
-
-          if [ -n "$FIX" ]; then
-            echo "FIX IS NOT EMPTY"
-          else
-            echo "FIX IS EMPTY"
-          fi
-
       - name: Generate changelog
         id: generate
         env:
@@ -85,27 +54,14 @@ jobs:
             | sed 's|^docs: ||;s|^docs([^)]*): ||' \
             | awk '{ print "- " toupper(substr($0,1,1)) substr($0,2) }')
 
-          CHANGELOG=""
-
-          if [ -n "$FEAT" ]; then
-            CHANGELOG="${CHANGELOG}## Features\n${FEAT}\n\n"
-          fi
-          if [ -n "$FIX" ]; then
-            CHANGELOG="${CHANGELOG}## Bug Fixes\n${FIX}\n\n"
-          fi
-          if [ -n "$REFACTOR" ]; then
-            CHANGELOG="${CHANGELOG}## Refactor\n${REFACTOR}\n\n"
-          fi
-          if [ -n "$DOCS" ]; then
-            CHANGELOG="${CHANGELOG}## Docs\n${DOCS}\n\n"
-          fi
-
-          if [ -z "$CHANGELOG" ]; then
-            CHANGELOG="No changes."
-          fi
-
           {
             echo "changelog<<EOF"
-            echo -e "$CHANGELOG"
+            [ -n "$FEAT" ] && printf "## Features\n%s\n\n" "$FEAT"
+            [ -n "$FIX" ] && printf "## Bug Fixes\n%s\n\n" "$FIX"
+            [ -n "$REFACTOR" ] && printf "## Refactor\n%s\n\n" "$REFACTOR"
+            [ -n "$DOCS" ] && printf "## Docs\n%s\n\n" "$DOCS"
+            if [ -z "$FEAT" ] && [ -z "$FIX" ] && [ -z "$REFACTOR" ] && [ -z "$DOCS" ]; then
+              echo "No changes."
+            fi
             echo "EOF"
-          } >> $GITHUB_OUTPUT
+          } >> "$GITHUB_OUTPUT"
