@@ -67,6 +67,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          ref: main
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
