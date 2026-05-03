@@ -6,10 +6,12 @@ authors = ["Kleshzz"]
 description = "Focus-aware process priority daemon"
 keywords = ["wayland", "compositor", "daemon", "priority", "nice"]
 categories = ["os", "command-line-utilities"]
-exclude = [".github", "pkg/"]
+exclude = [".github", "pkg/", "docs/"]
 license = "MIT"
 repository = "https://github.com/Kleshzz/stutter"
 rust-version = "1.85.0"
+homepage = "https://github.com/Kleshzz/stutter"
+readme = "docs/README.md"
 
 [dependencies]
 tokio = { version = "1", features = ["rt", "macros", "io-util", "net", "signal", "time"] }
