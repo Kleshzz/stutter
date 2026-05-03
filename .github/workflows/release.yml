@@ -54,6 +54,15 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release
 
+      - name: Delete existing release if exists
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.tag || github.ref_name }}
+        run: |
+          gh release delete "$TAG" --yes --cleanup-tag || true
+          git push origin "refs/tags/$TAG" --force
+
       - name: Create GitHub Release
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v3
