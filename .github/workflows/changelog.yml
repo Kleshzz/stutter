@@ -54,12 +54,18 @@ jobs:
             | sed 's|^docs: ||;s|^docs([^)]*): ||' \
             | awk '{ print "- " toupper(substr($0,1,1)) substr($0,2) }')
 
+          PERF=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^perf" \
+            | grep -v "^perf(dev)" \
+            | sed 's|^perf: ||;s|^perf([^)]*): ||' \
+            | awk '{ print "- " toupper(substr($0,1,1)) substr($0,2) }')
+
           {
             [ -n "$FEAT" ] && printf "## Features\n%s\n\n" "$FEAT"
             [ -n "$FIX" ] && printf "## Bug Fixes\n%s\n\n" "$FIX"
             [ -n "$REFACTOR" ] && printf "## Refactor\n%s\n\n" "$REFACTOR"
             [ -n "$DOCS" ] && printf "## Docs\n%s\n\n" "$DOCS"
-            if [ -z "$FEAT" ] && [ -z "$FIX" ] && [ -z "$REFACTOR" ] && [ -z "$DOCS" ]; then
+            [ -n "$PERF" ] && printf "## Performance\n%s\n\n" "$PERF"
+            if [ -z "$FEAT" ] && [ -z "$FIX" ] && [ -z "$REFACTOR" ] && [ -z "$DOCS" ] && [ -z "$PERF" ]; then
               echo "No changes."
             fi
           } > changelog.md
