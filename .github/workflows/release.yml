@@ -10,7 +10,13 @@ on:
       - "v*"
 
 jobs:
+  changelog:
+    uses: ./.github/workflows/changelog.yml
+    with:
+      tag: ${{ github.event.inputs.tag || github.ref_name }}
+
   build:
+    needs: changelog
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -51,6 +57,8 @@ jobs:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: target/release/stutter
           generate_release_notes: true
+          body: |
+            ${{ needs.changelog.outputs.changelog }}
 
   publish:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'

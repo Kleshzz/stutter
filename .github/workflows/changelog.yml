@@ -1,0 +1,68 @@
+name: Generate Changelog
+on:
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+    outputs:
+      changelog:
+        description: "Generated changelog"
+        value: ${{ jobs.changelog.outputs.changelog }}
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    outputs:
+      changelog: ${{ steps.generate.outputs.changelog }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        id: generate
+        env:
+          TAG_NAME: ${{ inputs.tag }}
+        run: |
+          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${TAG_NAME}$" | head -n1)
+
+          if [ -z "$PREV_TAG" ]; then
+            RANGE="HEAD"
+          else
+            RANGE="${PREV_TAG}..HEAD"
+          fi
+
+          capitalize() {
+            echo "$1" | awk '{ $1=toupper(substr($1,1,1))substr($1,2); print }'
+          }
+
+          FEAT=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^feat" | sed 's/^feat: //;s/^feat(//(/' | while read line; do echo "- $(capitalize "$line")"; done)
+          FIX=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^fix" | sed 's/^fix: //;s/^fix(//(/' | while read line; do echo "- $(capitalize "$line")"; done)
+          REFACTOR=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^refactor" | sed 's/^refactor: //;s/^refactor(//(/' | while read line; do echo "- $(capitalize "$line")"; done)
+          DOCS=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^docs" | sed 's/^docs: //;s/^docs(//(/' | while read line; do echo "- $(capitalize "$line")"; done)
+
+          CHANGELOG=""
+
+          if [ -n "$FEAT" ]; then
+            CHANGELOG="${CHANGELOG}## Features\n${FEAT}\n\n"
+          fi
+          if [ -n "$FIX" ]; then
+            CHANGELOG="${CHANGELOG}## Bug Fixes\n${FIX}\n\n"
+          fi
+          if [ -n "$REFACTOR" ]; then
+            CHANGELOG="${CHANGELOG}## Refactor\n${REFACTOR}\n\n"
+          fi
+          if [ -n "$DOCS" ]; then
+            CHANGELOG="${CHANGELOG}## Docs\n${DOCS}\n\n"
+          fi
+
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="No changes."
+          fi
+
+          {
+            echo "changelog<<EOF"
+            echo -e "$CHANGELOG"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
