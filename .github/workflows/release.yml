@@ -66,13 +66,42 @@ jobs:
         with:
           ref: main
 
-      - name: Update AUR package
-        uses: KSXGitHub/github-actions-deploy-aur@v3
-        with:
-          pkgname: stutter-git
-          pkgbuild: ./pkg/PKGBUILD
-          commit_username: github-actions[bot]
-          commit_email: 41898282+github-actions[bot]@users.noreply.github.com
-          ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: "chore: update to ${{ github.ref_name }}"
-          force_push: true
+      - name: Install dependencies
+        run: sudo apt-get install -y openssh-client git
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AUR_SSH_PRIVATE_KEY }}" > ~/.ssh/aur
+          chmod 600 ~/.ssh/aur
+          ssh-keyscan aur.archlinux.org >> ~/.ssh/known_hosts
+          cat >> ~/.ssh/config << EOF
+          Host aur.archlinux.org
+            IdentityFile ~/.ssh/aur
+            User aur
+          EOF
+
+      - name: Clone AUR repo
+        run: git clone ssh://aur@aur.archlinux.org/stutter-git.git /tmp/aur-pkg
+
+      - name: Update PKGBUILD
+        run: |
+          cp ./pkg/PKGBUILD /tmp/aur-pkg/PKGBUILD
+          cd /tmp/aur-pkg
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Generate .SRCINFO
+        run: |
+          docker run --rm -v /tmp/aur-pkg:/pkg archlinux:latest bash -c "
+            pacman -Sy --noconfirm pacman-contrib &&
+            cd /pkg &&
+            makepkg --printsrcinfo > .SRCINFO
+          "
+
+      - name: Commit and push
+        run: |
+          cd /tmp/aur-pkg
+          git add PKGBUILD .SRCINFO
+          git diff --staged --quiet || git commit -m "chore: update to ${{ github.ref_name }}"
+          git push
