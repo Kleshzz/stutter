@@ -67,8 +67,12 @@ impl WmBackend for NiriBackend {
             if n == 0 {
                 return Ok(None);
             }
-            let Ok(event) = serde_json::from_str::<NiriEvent>(self.line.trim_end()) else {
-                continue;
+            let event = match serde_json::from_str::<NiriEvent>(self.line.trim_end()) {
+                Ok(e) => e,
+                Err(e) => {
+                    debug!("failed to parse niri event: {e} (line: {})", self.line.trim_end());
+                    continue;
+                }
             };
             if let Some(WindowFocusChanged {
                 window:
