@@ -1,6 +1,7 @@
 use std::{collections::HashMap, path::PathBuf};
 
 use serde::Deserialize;
+use tracing::warn;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct AppConfig {
@@ -45,21 +46,21 @@ impl Config {
         self.default_nice = self.default_nice.clamp(-20, 19);
 
         if self.focused_nice != orig_focused {
-            eprintln!(
-                "[stutter] warning: focused_nice ({}) is out of bounds, clamped to {}",
+            warn!(
+                "focused_nice ({}) is out of bounds, clamped to {}",
                 orig_focused, self.focused_nice
             );
         }
         if self.default_nice != orig_default {
-            eprintln!(
-                "[stutter] warning: default_nice ({}) is out of bounds, clamped to {}",
+            warn!(
+                "default_nice ({}) is out of bounds, clamped to {}",
                 orig_default, self.default_nice
             );
         }
 
         if self.focused_nice >= self.default_nice {
-            eprintln!(
-                "[stutter] warning: focused_nice ({}) is >= default_nice ({}). \
+            warn!(
+                "focused_nice ({}) is >= default_nice ({}). \
                  The focused window will not receive a higher priority.",
                 self.focused_nice, self.default_nice
             );
@@ -70,7 +71,7 @@ impl Config {
                 let orig = *n;
                 *n = (*n).clamp(-20, 19);
                 if *n != orig {
-                    eprintln!("[stutter] warning: apps.{name}.focused_nice ({orig}) clamped to {n}");
+                    warn!("apps.{name}.focused_nice ({orig}) clamped to {n}");
                 }
             }
         }
@@ -125,8 +126,8 @@ default_nice = 0
     let config: Config = match toml::from_str(&content) {
         Ok(c) => c,
         Err(e) => {
-            eprintln!("[stutter] warning: failed to parse config file: {e}");
-            eprintln!("[stutter] warning: using default configuration");
+            warn!("failed to parse config file: {e}");
+            warn!("using default configuration");
             Config::default()
         }
     };
