@@ -37,10 +37,10 @@ jobs:
             echo "$1" | awk '{ $1=toupper(substr($1,1,1))substr($1,2); print }'
           }
 
-          FEAT=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^feat" | sed 's/^feat: //;s/^feat(//(/' | while read line; do echo "- $(capitalize "$line")"; done)
-          FIX=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^fix" | sed 's/^fix: //;s/^fix(//(/' | while read line; do echo "- $(capitalize "$line")"; done)
-          REFACTOR=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^refactor" | sed 's/^refactor: //;s/^refactor(//(/' | while read line; do echo "- $(capitalize "$line")"; done)
-          DOCS=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^docs" | sed 's/^docs: //;s/^docs(//(/' | while read line; do echo "- $(capitalize "$line")"; done)
+          FEAT=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^feat" | grep -v "^feat(dev)" | sed 's/^feat: //;s/^feat(//(/' | while read line; do echo "- $(capitalize "$line")"; done)
+          FIX=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^fix" | grep -v "^fix(dev)" | sed 's/^fix: //;s/^fix(//(/' | while read line; do echo "- $(capitalize "$line")"; done)
+          REFACTOR=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^refactor" | grep -v "^refactor(dev)" | sed 's/^refactor: //;s/^refactor(//(/' | while read line; do echo "- $(capitalize "$line")"; done)
+          DOCS=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^docs" | grep -v "^docs(dev)" | sed 's/^docs: //;s/^docs(//(/' | while read line; do echo "- $(capitalize "$line")"; done)
 
           CHANGELOG=""
 
