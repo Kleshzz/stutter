@@ -34,6 +34,16 @@ jobs:
             RANGE="${PREV_TAG}..${TAG_NAME}"
           fi
 
+          echo "PREV_TAG: $PREV_TAG"
+          echo "TAG_NAME: $TAG_NAME"
+          echo "RANGE: $RANGE"
+          echo "--- raw git log ---"
+          git log $RANGE --pretty=format:"%s (%h)" | head -20
+          echo "--- fix grep ---"
+          git log $RANGE --pretty=format:"%s (%h)" --grep="^fix" | head -10
+          echo "--- all tags ---"
+          git tag --sort=-version:refname | head -5
+
           capitalize() {
             echo "$1" | awk '{ $1=toupper(substr($1,1,1))substr($1,2); print }'
           }
