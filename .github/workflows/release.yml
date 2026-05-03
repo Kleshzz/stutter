@@ -1,6 +1,10 @@
 name: Release
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release'
+        required: true
   push:
     tags:
       - "v*"
@@ -17,19 +21,23 @@ jobs:
           fetch-depth: 0
 
       - name: Set version from tag
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          TAG_NAME: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
-          VERSION=${GITHUB_REF_NAME#v}
+          VERSION=${TAG_NAME#v}
           sed -i "s/^version = \".*\"/version = \"$VERSION\"/" Cargo.toml
           cargo update --workspace
 
       - name: Commit version bump
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          TAG_NAME: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Cargo.toml Cargo.lock
-          git diff --staged --quiet || git commit -m "chore: bump version to ${GITHUB_REF_NAME}"
+          git diff --staged --quiet || git commit -m "chore: bump version to ${TAG_NAME}"
           git push origin HEAD:main
 
       - uses: dtolnay/rust-toolchain@stable
@@ -37,14 +45,15 @@ jobs:
       - run: cargo build --release
 
       - name: Create GitHub Release
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         uses: softprops/action-gh-release@v3
         with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           files: target/release/stutter
           generate_release_notes: true
 
   publish:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -104,6 +113,7 @@ jobs:
       - name: Commit and push
         run: |
           cd /tmp/aur-pkg
+          TAG_NAME=${{ github.event.inputs.tag || github.ref_name }}
           git add PKGBUILD .SRCINFO
-          git diff --staged --quiet || git commit -m "chore: update to ${{ github.ref_name }}"
+          git diff --staged --quiet || git commit -m "chore: update to ${TAG_NAME}"
           git push
