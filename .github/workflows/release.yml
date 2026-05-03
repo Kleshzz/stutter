@@ -99,6 +99,7 @@ jobs:
             chown -R builder:builder /pkg &&
             su builder -c 'cd /pkg && makepkg --printsrcinfo > .SRCINFO'
           "
+          sudo chown -R $USER:$USER /tmp/aur-pkg
 
       - name: Commit and push
         run: |
