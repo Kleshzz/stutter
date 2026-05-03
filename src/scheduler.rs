@@ -23,25 +23,12 @@ fn handle_errno(pid: u32, errno: i32, action: &str) -> Result<()> {
 }
 
 pub fn set_priority(pid: u32, nice: i32, dry_run: bool) -> Result<()> {
-    unsafe { *libc::__errno_location() = 0 };
-    let current_nice = unsafe { libc::getpriority(libc::PRIO_PROCESS, pid) };
-
-    if current_nice == -1 {
-        let errno = unsafe { *libc::__errno_location() };
-        if errno != 0 {
-            return handle_errno(pid, errno, "getting");
-        }
-    }
-
-    if current_nice == nice {
-        return Ok(());
-    }
-
     if dry_run {
-        println!("[stutter] [DRY RUN] would set pid {pid} to nice {nice} (current: {current_nice})");
+        println!("[stutter] [DRY RUN] would set pid {pid} to nice {nice}");
         return Ok(());
     }
 
+    unsafe { *libc::__errno_location() = 0 };
     let ret = unsafe { libc::setpriority(libc::PRIO_PROCESS, pid, nice) };
 
     if ret == -1 {

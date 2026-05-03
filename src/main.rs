@@ -102,25 +102,29 @@ async fn main() -> Result<()> {
                 } => {
                     match result {
                         Ok(Some(event)) => {
-                            if let Some(p) = prev_pid {
-                                if p != event.pid || prev_addr.as_ref() != Some(&event.addr) {
-                                    reset_prev(&mut prev_pid, &mut prev_addr, cfg.default_nice, "reset", dry_run);
-                                }
+                            if prev_pid == Some(event.pid) && prev_addr.as_ref() == Some(&event.addr) {
+                                continue;
                             }
-                            let focused_nice = cfg.focused_nice_for(&event.class);
-                            match set_priority(event.pid, focused_nice, dry_run) {
-                                Ok(()) if !dry_run => {
+
+                            if prev_pid == Some(event.pid) {
+                                info!("focus moved to another window of pid {} ({})", event.pid, event.class);
+                            } else {
+                                reset_prev(&mut prev_pid, &mut prev_addr, cfg.default_nice, "reset", dry_run);
+
+                                let focused_nice = cfg.focused_nice_for(&event.class);
+                                if let Err(e) = set_priority(event.pid, focused_nice, dry_run) {
+                                    error!("failed to boost pid {}: {e}", event.pid);
+                                } else if !dry_run {
                                     info!(
                                         "pid {} ({}) → nice {}",
                                         event.pid, event.class, focused_nice
                                     );
                                 }
-                                Ok(()) => {}
-                                Err(e) => error!("failed to boost pid {}: {e}", event.pid),
                             }
                             prev_pid = Some(event.pid);
                             prev_addr = Some(event.addr);
                         }
+
                         Ok(None) => {
                             warn!("WM socket closed, reconnecting in 3s");
                             tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
