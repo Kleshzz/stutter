@@ -17,6 +17,7 @@ async fn wait_shutdown(sigterm: &mut Signal, sigint: &mut Signal) {
 fn reset_prev(
     prev_pid: &mut Option<u32>,
     prev_addr: &mut Option<String>,
+    current_boosted_nice: &mut Option<i32>,
     default_nice: i32,
     reason: &str,
     dry_run: bool,
@@ -29,6 +30,7 @@ fn reset_prev(
         }
     }
     prev_addr.take();
+    current_boosted_nice.take();
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -55,6 +57,7 @@ async fn main() -> Result<()> {
 
     let mut prev_pid: Option<u32> = None;
     let mut prev_addr: Option<String> = None;
+    let mut current_boosted_nice: Option<i32> = None;
 
     let mut sigterm = signal(SignalKind::terminate())?;
     let mut sigint = signal(SignalKind::interrupt())?;
@@ -106,12 +109,21 @@ async fn main() -> Result<()> {
                                 continue;
                             }
 
-                            if prev_pid == Some(event.pid) {
-                                info!("focus moved to another window of pid {} ({})", event.pid, event.class);
+                            if prev_pid != Some(event.pid) {
+                                reset_prev(
+                                    &mut prev_pid,
+                                    &mut prev_addr,
+                                    &mut current_boosted_nice,
+                                    cfg.default_nice,
+                                    "reset",
+                                    dry_run,
+                                );
                             } else {
-                                reset_prev(&mut prev_pid, &mut prev_addr, cfg.default_nice, "reset", dry_run);
+                                info!("focus moved to another window of pid {} ({})", event.pid, event.class);
+                            }
 
-                                let focused_nice = cfg.focused_nice_for(&event.class);
+                            let focused_nice = cfg.focused_nice_for(&event.class);
+                            if current_boosted_nice != Some(focused_nice) {
                                 if let Err(e) = set_priority(event.pid, focused_nice, dry_run) {
                                     error!("failed to boost pid {}: {e}", event.pid);
                                 } else if !dry_run {
@@ -120,7 +132,9 @@ async fn main() -> Result<()> {
                                         event.pid, event.class, focused_nice
                                     );
                                 }
+                                current_boosted_nice = Some(focused_nice);
                             }
+
                             prev_pid = Some(event.pid);
                             prev_addr = Some(event.addr);
                         }
