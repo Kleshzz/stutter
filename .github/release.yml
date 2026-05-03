@@ -6,5 +6,5 @@ changelog:
       labels: ["fix", "bug"]
     - title: "Refactors"
       labels: ["refactor"]
-    - title: "Dependencies"
-      labels: ["deps", "dependencies"]
+    - title: "Documentation"
+      labels: ["docs"]
