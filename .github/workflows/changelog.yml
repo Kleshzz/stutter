@@ -55,7 +55,6 @@ jobs:
             | awk '{ print "- " toupper(substr($0,1,1)) substr($0,2) }')
 
           {
-            echo "changelog<<EOF"
             [ -n "$FEAT" ] && printf "## Features\n%s\n\n" "$FEAT"
             [ -n "$FIX" ] && printf "## Bug Fixes\n%s\n\n" "$FIX"
             [ -n "$REFACTOR" ] && printf "## Refactor\n%s\n\n" "$REFACTOR"
@@ -63,5 +62,16 @@ jobs:
             if [ -z "$FEAT" ] && [ -z "$FIX" ] && [ -z "$REFACTOR" ] && [ -z "$DOCS" ]; then
               echo "No changes."
             fi
+          } > changelog.md
+
+          {
+            echo "changelog<<EOF"
+            cat changelog.md
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: changelog.md
+          retention-days: 1
