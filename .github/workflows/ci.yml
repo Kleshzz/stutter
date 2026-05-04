@@ -51,6 +51,7 @@ jobs:
 
       - run: cargo +nightly fmt --all --check
       - run: cargo +stable clippy --all-targets -- -D warnings
+      - run: cargo check --locked --all-targets
 
   build:
     name: Build & Test
@@ -88,4 +89,4 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
 
-      - run: cargo build
+      - run: cargo build --locked
