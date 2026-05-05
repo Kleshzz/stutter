@@ -32,7 +32,6 @@ pub async fn get_active_window(path: &std::path::Path) -> Result<(u32, String, S
     let mut stream = UnixStream::connect(path).await?;
 
     stream.write_all(b"j/activewindow").await?;
-    stream.shutdown().await?;
 
     let mut buf = String::new();
     stream.read_to_string(&mut buf).await?;
