@@ -169,11 +169,27 @@ async fn main() -> Result<()> {
 
                         Ok(None) => {
                             warn!("WM socket closed, reconnecting in 3s");
+                            reset_prev(
+                                &mut prev_pid,
+                                &mut prev_addr,
+                                &mut current_boosted_nice,
+                                cfg.default_nice,
+                                "wm disconnect",
+                                dry_run,
+                            );
                             tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
                             break;
                         }
                         Err(e) => {
                             warn!("socket error: {e}, reconnecting in 3s");
+                            reset_prev(
+                                &mut prev_pid,
+                                &mut prev_addr,
+                                &mut current_boosted_nice,
+                                cfg.default_nice,
+                                "socket error",
+                                dry_run,
+                            );
                             tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
                             break;
                         }
