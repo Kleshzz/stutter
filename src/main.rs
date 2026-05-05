@@ -6,13 +6,9 @@ mod scheduler;
 use backend::{Backend, WmBackend};
 use error::Result;
 use scheduler::set_priority;
-use tokio::signal::unix::{Signal, SignalKind, signal};
+use tokio::signal::unix::{SignalKind, signal};
 use tracing::{error, info, warn};
 use tracing_subscriber::EnvFilter;
-
-async fn wait_shutdown(sigterm: &mut Signal, sigint: &mut Signal) {
-    tokio::select! { _ = sigterm.recv() => {}, _ = sigint.recv() => {} }
-}
 
 fn reset_prev(
     prev_pid: &mut Option<u32>,
@@ -102,8 +98,6 @@ async fn main() -> Result<()> {
     let mut prev_addr: Option<String> = None;
     let mut current_boosted_nice: Option<i32> = None;
 
-    let mut sigterm = signal(SignalKind::terminate())?;
-    let mut sigint = signal(SignalKind::interrupt())?;
     let mut sighup = signal(SignalKind::hangup())?;
 
     loop {
@@ -124,7 +118,7 @@ async fn main() -> Result<()> {
 
         loop {
             tokio::select! {
-                () = wait_shutdown(&mut sigterm, &mut sigint) => {
+                _ = tokio::signal::ctrl_c() => {
                     info!("received termination signal, exiting");
                     if let Some(p) = prev_pid {
                         let _ = set_priority(p, cfg.default_nice, dry_run);
