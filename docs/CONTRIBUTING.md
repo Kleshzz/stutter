@@ -91,6 +91,7 @@ A few project-wide conventions to keep in mind:
 - Prefer `?` over `unwrap`/`expect` in production paths — both are warned on by clippy.
 - `unsafe` code is allowed but warned; leave a `// SAFETY:` comment explaining the invariant.
 - Log with `tracing` macros (`info!`, `warn!`, `error!`). Do not use `println!`.
+- Prefer logging errors once at the call site (e.g., in `main.rs`) rather than inside library functions to avoid duplicate log entries.
 - Keep `max_width` at 110 characters (set in `.rustfmt.toml`).
 
 Both the format check and clippy run automatically on every push and pull request via CI.
@@ -134,6 +135,7 @@ Refer to the existing implementations in the `src/backend/` directory for refere
 - Fill in the PR description: what changed and why.
 - If your change is user-visible (new feature, behaviour change, bug fix), a changelog entry will be generated automatically from the PR title — write it clearly.
 - CI must be green before merge: `lint` → `build & test` → `msrv` jobs all need to pass.
+- New GitHub Actions workflows must follow the principle of least privilege by explicitly limiting `GITHUB_TOKEN` permissions (e.g., `permissions: contents: read`).
 
 For larger changes (new backend, API redesign) it is worth opening an issue first to align on the approach before writing code.
 
