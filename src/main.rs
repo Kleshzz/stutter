@@ -50,6 +50,7 @@ fn handle_focus_event(
             "focus moved to another window of pid {} ({})",
             event.pid, event.class
         );
+        current_boosted_nice.take();
     } else {
         reset_prev(
             prev_pid,
