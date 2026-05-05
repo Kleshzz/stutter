@@ -1,4 +1,6 @@
 name: CI
+permissions:
+  contents: read
 
 on:
   workflow_dispatch:
@@ -8,7 +10,7 @@ on:
       - "src/**"
       - "Cargo.toml"
       - "Cargo.lock"
-      - ".rustfmt.toml"
+      - "rustfmt.toml"
       - ".github/workflows/ci.yml"
   pull_request:
     branches: ["**"]
@@ -16,7 +18,7 @@ on:
       - "src/**"
       - "Cargo.toml"
       - "Cargo.lock"
-      - ".rustfmt.toml"
+      - "rustfmt.toml"
       - ".github/workflows/ci.yml"
 
 concurrency:
