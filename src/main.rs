@@ -127,6 +127,7 @@ async fn main() -> Result<()> {
                 }
                 _ = sighup.recv() => {
                     info!("received SIGHUP, reloading config");
+                    let old_default = cfg.default_nice;
                     cfg = config::load();
                     info!(
                         focused_nice = cfg.focused_nice,
@@ -137,7 +138,7 @@ async fn main() -> Result<()> {
                         &mut prev_pid,
                         &mut prev_addr,
                         &mut current_boosted_nice,
-                        cfg.default_nice,
+                        old_default,
                         "sighup reset",
                         dry_run,
                     );
