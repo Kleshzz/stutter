@@ -142,6 +142,7 @@ async fn main() -> Result<()> {
                         "sighup reset",
                         dry_run,
                     );
+                    scheduler::reset_warned();
                 }
 
                 result = async {

@@ -1,22 +1,20 @@
 #![allow(unsafe_code)]
 
-use tracing::{debug, error};
+use tracing::debug;
 
 use crate::error::{Result, StutterError};
 
 static WARNED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
-fn handle_errno(pid: u32, errno: i32, action: &str) -> Result<()> {
+pub fn reset_warned() {
+    WARNED.store(false, std::sync::atomic::Ordering::Relaxed);
+}
+
+fn handle_errno(pid: u32, errno: i32, _action: &str) -> Result<()> {
     // ESRCH = process no longer exists, skip silently
     if errno == libc::ESRCH {
         debug!("pid {pid} not found (ESRCH), skipping");
         return Ok(());
-    }
-
-    if (errno == libc::EPERM || errno == libc::EACCES)
-        && !WARNED.swap(true, std::sync::atomic::Ordering::Relaxed)
-    {
-        error!("permission denied when {action} priority for pid {pid}. ensure CAP_SYS_NICE or root");
     }
 
     Err(StutterError::Priority { pid, errno })
