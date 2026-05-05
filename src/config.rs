@@ -99,6 +99,7 @@ fn config_path() -> Option<PathBuf> {
 
 pub fn load() -> Config {
     let Some(path) = config_path() else {
+        warn!("could not determine config path (HOME/XDG_CONFIG_HOME not set), using defaults");
         return Config::default().validate();
     };
 
