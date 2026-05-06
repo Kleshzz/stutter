@@ -81,10 +81,14 @@ impl WmBackend for NiriBackend {
                         id,
                         app_id,
                     }) => {
+                        let class = app_id.unwrap_or_else(|| {
+                            debug!("niri window {id} has no app_id");
+                            String::new()
+                        });
                         return Ok(Some(FocusChange::Focused(FocusEvent {
                             pid,
                             addr: id.to_string(),
-                            class: app_id.unwrap_or_default(),
+                            class,
                         })));
                     }
                     _ => return Ok(Some(FocusChange::Unfocused)),
@@ -109,11 +113,17 @@ mod tests {
                     pid: Some(pid),
                     id,
                     app_id,
-                }) => Some(FocusChange::Focused(FocusEvent {
-                    pid,
-                    addr: id.to_string(),
-                    class: app_id.unwrap_or_default(),
-                })),
+                }) => {
+                    let class = app_id.unwrap_or_else(|| {
+                        debug!("niri window {id} has no app_id");
+                        String::new()
+                    });
+                    Some(FocusChange::Focused(FocusEvent {
+                        pid,
+                        addr: id.to_string(),
+                        class,
+                    }))
+                }
                 _ => Some(FocusChange::Unfocused),
             }
         } else {
