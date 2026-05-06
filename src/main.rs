@@ -10,6 +10,17 @@ use tokio::signal::unix::{SignalKind, signal};
 use tracing::{error, info, warn};
 use tracing_subscriber::EnvFilter;
 
+fn shutdown(prev_pid: Option<u32>, default_nice: i32, dry_run: bool, reason: &str) {
+    info!("received {reason}, exiting");
+    if let Some(p) = prev_pid {
+        if let Err(e) = set_priority(p, default_nice, dry_run) {
+            error!("failed to reset priority for pid {p}: {e}");
+        } else if !dry_run {
+            info!("pid {p} → nice {default_nice} (shutdown)");
+        }
+    }
+}
+
 fn reset_prev(
     prev_pid: &mut Option<u32>,
     prev_addr: &mut Option<String>,
@@ -104,6 +115,7 @@ async fn main() -> Result<()> {
     let mut current_boosted_nice: Option<i32> = None;
 
     let mut sighup = signal(SignalKind::hangup())?;
+    let mut sigterm = signal(SignalKind::terminate())?;
 
     loop {
         let mut wm = match backend::detect().await {
@@ -124,10 +136,11 @@ async fn main() -> Result<()> {
         loop {
             tokio::select! {
                 _ = tokio::signal::ctrl_c() => {
-                    info!("received termination signal, exiting");
-                    if let Some(p) = prev_pid {
-                        let _ = set_priority(p, cfg.default_nice, dry_run);
-                    }
+                    shutdown(prev_pid, cfg.default_nice, dry_run, "SIGINT");
+                    return Ok(());
+                }
+                _ = sigterm.recv() => {
+                    shutdown(prev_pid, cfg.default_nice, dry_run, "SIGTERM");
                     return Ok(());
                 }
                 _ = sighup.recv() => {
