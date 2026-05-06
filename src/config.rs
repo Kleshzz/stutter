@@ -103,11 +103,11 @@ pub fn load() -> Config {
         return Config::default().validate();
     };
 
-    if !path.exists() {
-        if let Some(dir) = path.parent() {
-            let _ = std::fs::create_dir_all(dir);
-        }
-        let default_content = "\
+    if let Some(dir) = path.parent() {
+        let _ = std::fs::create_dir_all(dir);
+    }
+
+    let default_content = "\
 # stutter configuration file
 
 # CPU priority of the focused window (lower = higher priority, min -20)
@@ -116,6 +116,14 @@ focused_nice = -5
 # CPU priority of all other windows (restored when window loses focus)
 default_nice = 0
 ";
+
+    // atomically create the file only if it doesn't exist to avoid TOCTOU race
+    if std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)
+        .is_ok()
+    {
         let _ = std::fs::write(&path, default_content);
         return Config::default().validate();
     }
