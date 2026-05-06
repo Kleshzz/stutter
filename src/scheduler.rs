@@ -1,6 +1,6 @@
 #![allow(unsafe_code)]
 
-use tracing::debug;
+use tracing::{debug, warn};
 
 use crate::error::{Result, StutterError};
 
@@ -14,6 +14,16 @@ fn handle_errno(pid: u32, errno: i32, _action: &str) -> Result<()> {
     // ESRCH = process no longer exists, skip silently
     if errno == libc::ESRCH {
         debug!("pid {pid} not found (ESRCH), skipping");
+        return Ok(());
+    }
+
+    if errno == libc::EPERM {
+        if !WARNED.swap(true, std::sync::atomic::Ordering::Relaxed) {
+            warn!(
+                "pid {pid}: permission denied (EPERM). \
+                 Run stutter as root or grant CAP_SYS_NICE to set priority for other users' processes."
+            );
+        }
         return Ok(());
     }
 
