@@ -37,7 +37,7 @@ pub fn set_priority(pid: u32, nice: i32, dry_run: bool) -> Result<()> {
     }
 
     unsafe { *libc::__errno_location() = 0 };
-    let ret = unsafe { libc::setpriority(libc::PRIO_PROCESS, pid, nice) };
+    let ret = unsafe { libc::setpriority(libc::PRIO_PROCESS, pid as libc::id_t, nice) };
 
     if ret == -1 {
         let errno = unsafe { *libc::__errno_location() };
