@@ -6,7 +6,7 @@ use tokio::{
 };
 use tracing::debug;
 
-use super::{FocusEvent, WmBackend};
+use super::{FocusChange, FocusEvent, WmBackend};
 use crate::error::{Result, StutterError};
 
 pub struct NiriBackend {
@@ -60,7 +60,7 @@ struct NiriWindow {
 }
 
 impl WmBackend for NiriBackend {
-    async fn next_focus_event(&mut self) -> Result<Option<FocusEvent>> {
+    async fn next_focus_event(&mut self) -> Result<Option<FocusChange>> {
         loop {
             self.line.clear();
             let n = self.reader.read_line(&mut self.line).await?;
@@ -74,20 +74,21 @@ impl WmBackend for NiriBackend {
                     continue;
                 }
             };
-            if let Some(WindowFocusChanged {
-                window:
+            if let Some(focus_change) = event.window_focus_changed {
+                match focus_change.window {
                     Some(NiriWindow {
                         pid: Some(pid),
                         id,
                         app_id,
-                    }),
-            }) = event.window_focus_changed
-            {
-                return Ok(Some(FocusEvent {
-                    pid,
-                    addr: id.to_string(),
-                    class: app_id.unwrap_or_default(),
-                }));
+                    }) => {
+                        return Ok(Some(FocusChange::Focused(FocusEvent {
+                            pid,
+                            addr: id.to_string(),
+                            class: app_id.unwrap_or_default(),
+                        })));
+                    }
+                    _ => return Ok(Some(FocusChange::Unfocused)),
+                }
             }
         }
     }
@@ -98,24 +99,23 @@ mod tests {
     #![allow(clippy::unwrap_used)]
     use super::*;
 
-    fn parse_event(json: &str) -> Option<FocusEvent> {
+    fn parse_event(json: &str) -> Option<FocusChange> {
         let Ok(event) = serde_json::from_str::<NiriEvent>(json) else {
             return None;
         };
-        if let Some(WindowFocusChanged {
-            window:
+        if let Some(focus_change) = event.window_focus_changed {
+            match focus_change.window {
                 Some(NiriWindow {
                     pid: Some(pid),
                     id,
                     app_id,
-                }),
-        }) = event.window_focus_changed
-        {
-            Some(FocusEvent {
-                pid,
-                addr: id.to_string(),
-                class: app_id.unwrap_or_default(),
-            })
+                }) => Some(FocusChange::Focused(FocusEvent {
+                    pid,
+                    addr: id.to_string(),
+                    class: app_id.unwrap_or_default(),
+                })),
+                _ => Some(FocusChange::Unfocused),
+            }
         } else {
             None
         }
@@ -125,15 +125,19 @@ mod tests {
     fn parses_window_focus_changed() {
         let json = r#"{"WindowFocusChanged":{"window":{"id":42,"pid":1234,"title":"foo","app_id":"bar"}}}"#;
         let event = parse_event(json).unwrap();
+        let FocusChange::Focused(event) = event else {
+            panic!("expected Focused")
+        };
         assert_eq!(event.pid, 1234);
         assert_eq!(event.addr, "42");
     }
 
     #[test]
-    fn focus_lost_returns_none() {
+    fn focus_lost_returns_unfocused() {
         // window = null means focus lost (empty workspace)
         let json = r#"{"WindowFocusChanged":{"window":null}}"#;
-        assert!(parse_event(json).is_none());
+        let event = parse_event(json).unwrap();
+        assert!(matches!(event, FocusChange::Unfocused));
     }
 
     #[test]
@@ -149,15 +153,19 @@ mod tests {
     }
 
     #[test]
-    fn window_without_pid_returns_none() {
+    fn window_without_pid_returns_unfocused() {
         let json = r#"{"WindowFocusChanged":{"window":{"id":42}}}"#;
-        assert!(parse_event(json).is_none());
+        let event = parse_event(json).unwrap();
+        assert!(matches!(event, FocusChange::Unfocused));
     }
 
     #[test]
     fn parses_app_id_as_class() {
         let json = r#"{"WindowFocusChanged":{"window":{"id":1,"pid":99,"app_id":"firefox"}}}"#;
         let event = parse_event(json).unwrap();
+        let FocusChange::Focused(event) = event else {
+            panic!("expected Focused")
+        };
         assert_eq!(event.class, "firefox");
     }
 
@@ -165,6 +173,9 @@ mod tests {
     fn missing_app_id_gives_empty_class() {
         let json = r#"{"WindowFocusChanged":{"window":{"id":1,"pid":99}}}"#;
         let event = parse_event(json).unwrap();
+        let FocusChange::Focused(event) = event else {
+            panic!("expected Focused")
+        };
         assert_eq!(event.class, "");
     }
 }

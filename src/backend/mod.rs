@@ -9,8 +9,13 @@ pub struct FocusEvent {
     pub class: String,
 }
 
+pub enum FocusChange {
+    Focused(FocusEvent),
+    Unfocused,
+}
+
 pub trait WmBackend: Send {
-    async fn next_focus_event(&mut self) -> Result<Option<FocusEvent>>;
+    async fn next_focus_event(&mut self) -> Result<Option<FocusChange>>;
 }
 
 pub enum Backend {

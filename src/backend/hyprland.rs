@@ -57,7 +57,7 @@ pub async fn get_active_window(path: &std::path::Path) -> Result<(u32, String, S
     ))
 }
 
-use super::{FocusEvent, WmBackend};
+use super::{FocusChange, FocusEvent, WmBackend};
 
 pub struct HyprlandBackend {
     reader: tokio::io::BufReader<tokio::net::UnixStream>,
@@ -79,7 +79,7 @@ impl HyprlandBackend {
 }
 
 impl WmBackend for HyprlandBackend {
-    async fn next_focus_event(&mut self) -> crate::error::Result<Option<FocusEvent>> {
+    async fn next_focus_event(&mut self) -> crate::error::Result<Option<FocusChange>> {
         use tokio::io::AsyncBufReadExt;
         loop {
             self.line.clear();
@@ -90,8 +90,12 @@ impl WmBackend for HyprlandBackend {
             let event = self.line.trim_end();
             if event.starts_with("activewindow>>") {
                 match get_active_window(&self.cmd_socket_path).await {
-                    Ok((pid, addr, class)) => return Ok(Some(FocusEvent { pid, addr, class })),
-                    Err(crate::error::StutterError::NoActiveWindow) => {}
+                    Ok((pid, addr, class)) => {
+                        return Ok(Some(FocusChange::Focused(FocusEvent { pid, addr, class })));
+                    }
+                    Err(crate::error::StutterError::NoActiveWindow) => {
+                        return Ok(Some(FocusChange::Unfocused));
+                    }
                     Err(e) => return Err(e),
                 }
             }

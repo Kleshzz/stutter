@@ -157,13 +157,23 @@ async fn main() -> Result<()> {
                     }
                 } => {
                     match result {
-                        Ok(Some(event)) => {
+                        Ok(Some(backend::FocusChange::Focused(event))) => {
                             handle_focus_event(
                                 event,
                                 &mut prev_pid,
                                 &mut prev_addr,
                                 &mut current_boosted_nice,
                                 &cfg,
+                                dry_run,
+                            );
+                        }
+                        Ok(Some(backend::FocusChange::Unfocused)) => {
+                            reset_prev(
+                                &mut prev_pid,
+                                &mut prev_addr,
+                                &mut current_boosted_nice,
+                                cfg.default_nice,
+                                "unfocused",
                                 dry_run,
                             );
                         }
