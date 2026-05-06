@@ -104,7 +104,9 @@ pub fn load() -> Config {
     };
 
     if let Some(dir) = path.parent() {
-        let _ = std::fs::create_dir_all(dir);
+        if let Err(e) = std::fs::create_dir_all(dir) {
+            warn!("failed to create config dir: {e}");
+        }
     }
 
     let default_content = "\
@@ -124,7 +126,9 @@ default_nice = 0
         .open(&path)
         .is_ok()
     {
-        let _ = std::fs::write(&path, default_content);
+        if let Err(e) = std::fs::write(&path, default_content) {
+            warn!("failed to write default config: {e}");
+        }
         return Config::default().validate();
     }
 
