@@ -5,6 +5,8 @@
 # IDE
 .vscode/
 .idea/
+.zed/
+.helix/
 *.swp
 *.swo
 
