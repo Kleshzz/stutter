@@ -51,12 +51,7 @@ systemctl --user reload stutter
 
 ## Requirements
 
-- Permission to lower nice values - either run as root, or grant the binary
-  `CAP_SYS_NICE`:
-
-```
-sudo setcap cap_sys_nice+ep /usr/bin/stutter
-```
+To function correctly, `stutter` needs permission to lower nice values. You can either run it as root or grant the binary `CAP_SYS_NICE` (see the [Setup](#setup) section for details).
 
 ## Installation
 
@@ -74,13 +69,17 @@ curl -L https://github.com/Kleshzz/stutter/releases/latest/download/stutter \
 sudo install -Dm755 /tmp/stutter /usr/bin/stutter
 ```
 
+Then follow the [Setup](#setup) section to grant permissions.
+
 ### From source
 ```bash
 cargo install stutter-daemon
 # or build manually:
-cargo build --release
+cargo build --release --locked
 sudo install -Dm755 target/release/stutter /usr/bin/stutter
 ```
+
+Then follow the [Setup](#setup) section to grant permissions.
 
 ## Setup
 
@@ -90,6 +89,7 @@ sudo install -Dm755 target/release/stutter /usr/bin/stutter
 sudo setcap cap_sys_nice+ep /usr/bin/stutter
 
 # Option B - run as root (not recommended)
+sudo stutter
 ```
 
 ### Autostart
@@ -113,6 +113,14 @@ exec-once = stutter
 **niri (config.kdl):**
 ```kdl
 spawn-at-startup "stutter"
+```
+
+## Usage
+
+### Dry run
+You can test that `stutter` correctly connects to your compositor without making any priority changes:
+```bash
+stutter --dry-run
 ```
 
 ## License
