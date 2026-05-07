@@ -62,13 +62,25 @@ jobs:
             | sed 's|^perf: ||;s|^perf([^)]*): ||' \
             | awk '{ print "- " toupper(substr($0,1,1)) substr($0,2) }')
 
+          DEBUG=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^debug" \
+            | grep -v "^debug(dev)" \
+            | sed 's|^debug: ||;s|^debug([^)]*): ||' \
+            | awk '{ print "- " toupper(substr($0,1,1)) substr($0,2) }')
+
+          STYLE=$(git log $RANGE --pretty=format:"%s (%h)" --grep="^style" \
+            | grep -v "^style(dev)" \
+            | sed 's|^style: ||;s|^style([^)]*): ||' \
+            | awk '{ print "- " toupper(substr($0,1,1)) substr($0,2) }')
+
           {
             [ -n "$FEAT" ] && printf "## Features\n%s\n\n" "$FEAT"
             [ -n "$FIX" ] && printf "## Bug Fixes\n%s\n\n" "$FIX"
-            [ -n "$REFACTOR" ] && printf "## Refactor\n%s\n\n" "$REFACTOR"
-            [ -n "$DOCS" ] && printf "## Docs\n%s\n\n" "$DOCS"
             [ -n "$PERF" ] && printf "## Performance\n%s\n\n" "$PERF"
-            if [ -z "$FEAT" ] && [ -z "$FIX" ] && [ -z "$REFACTOR" ] && [ -z "$DOCS" ] && [ -z "$PERF" ]; then
+            [ -n "$REFACTOR" ] && printf "## Refactor\n%s\n\n" "$REFACTOR"
+            [ -n "$DEBUG" ]  && printf "## Debug\n%s\n\n"  "$DEBUG"
+            [ -n "$STYLE" ]  && printf "## Style\n%s\n\n"  "$STYLE"
+            [ -n "$DOCS" ] && printf "## Docs\n%s\n\n" "$DOCS"
+            if [ -z "$FEAT" ] && [ -z "$FIX" ] && [ -z "$REFACTOR" ] && [ -z "$DOCS" ] && [ -z "$PERF" ] && [ -z "$DEBUG" ] && [ -z "$STYLE" ]; then
               echo "No changes."
             fi
           } > changelog.md
