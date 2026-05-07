@@ -27,7 +27,7 @@ Thanks for your interest in contributing! This document covers everything you ne
 ```bash
 git clone https://github.com/Kleshzz/stutter
 cd stutter
-cargo build
+cargo build --locked
 ```
 
 **Run in dry-run mode** (no actual `setpriority` calls, safe for development):
@@ -58,7 +58,7 @@ src/
     └── niri.rs      # Niri IPC backend
 ```
 
-The core abstraction is the `WmBackend` trait in `src/backend/mod.rs`. Each compositor backend implements a single async method — `next_focus_event` — which yields `FocusEvent { pid, addr, class }` on every focus change. The main loop in `main.rs` is compositor-agnostic.
+The core abstraction is the `WmBackend` trait in `src/backend/mod.rs`. Each compositor backend implements a single async method — `next_focus_event` — which yields `FocusChange` (either `Focused(FocusEvent)` or `Unfocused`) on every focus change. The main loop in `main.rs` is compositor-agnostic.
 
 ---
 
@@ -68,7 +68,7 @@ The core abstraction is the `WmBackend` trait in `src/backend/mod.rs`. Each comp
 2. Keep commits focused — one logical change per commit.
 3. Make sure `cargo clippy --all-targets -- -D warnings` passes before opening a PR.
 4. Make sure `cargo +nightly fmt --all` has been run (see [Code Style](#code-style)).
-5. If you are adding a feature or fixing a bug, add a brief description to your PR — the changelog is generated from PR titles and labels.
+5. If you are adding a feature or fixing a bug, use [Conventional Commits](https://www.conventionalcommits.org/) — the changelog is generated automatically from commit messages (`feat:`, `fix:`, etc.).
 
 ---
 
@@ -106,7 +106,7 @@ If you want to add support for a new Wayland compositor, here is the minimal pat
 2. Define a connection struct and implement the `WmBackend` trait:
 
 ```rust
-use crate::{backend::{FocusEvent, WmBackend}, error::Result};
+use crate::{backend::{FocusChange, WmBackend}, error::Result};
 
 pub struct MyBackend { /* IPC socket, reader, … */ }
 
@@ -115,15 +115,19 @@ impl MyBackend {
 }
 
 impl WmBackend for MyBackend {
-    async fn next_focus_event(&mut self) -> Result<Option<FocusEvent>> {
+    async fn next_focus_event(&mut self) -> Result<Option<FocusChange>> {
         // Read the next focus-change event from the compositor IPC.
+        // Return Ok(Some(FocusChange::Focused(event))) or Ok(Some(FocusChange::Unfocused)).
         // Return Ok(None) when the socket is closed (triggers reconnect).
     }
 }
 ```
 
 3. Add the new variant to the `Backend` enum in `src/backend/mod.rs` and wire it into `detect()` (check the relevant environment variable or socket path).
-4. Add a match arm in `main.rs` where `backend::detect()` is called and where `next_focus_event` is dispatched.
+4. Add a match arm for your variant in `main.rs` inside the `tokio::select!` block where `next_focus_event` is called.
+
+> [!TIP]
+> You can test your backend logic without a running compositor by using the `--dry-run` flag and mocking IPC responses if necessary.
 
 Refer to the existing implementations in the `src/backend/` directory for reference.
 
@@ -133,7 +137,7 @@ Refer to the existing implementations in the `src/backend/` directory for refere
 
 - Target the `main` branch.
 - Fill in the PR description: what changed and why.
-- If your change is user-visible (new feature, behaviour change, bug fix), a changelog entry will be generated automatically from the PR title — write it clearly.
+- If your change is user-visible (new feature, behaviour change, bug fix), a changelog entry will be generated automatically from your commit messages — ensure they follow Conventional Commits.
 - CI must be green before merge: `lint` → `build & test` → `msrv` jobs all need to pass.
 - New GitHub Actions workflows must follow the principle of least privilege by explicitly limiting `GITHUB_TOKEN` permissions (e.g., `permissions: contents: read`).
 
