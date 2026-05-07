@@ -58,6 +58,7 @@ fn handle_focus_event(
             event.pid, event.class
         );
         current_boosted_nice.take();
+        *prev_addr = Some(event.addr.clone()); // обновляем адрес, чтобы дедуп не застрял на stale значении
     } else {
         reset_prev(
             prev_pid,
