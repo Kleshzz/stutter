@@ -203,6 +203,7 @@ async fn main() -> Result<()> {
                                 "wm disconnect",
                                 dry_run,
                             );
+                            scheduler::reset_warned();
                             tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
                             break;
                         }
@@ -216,6 +217,7 @@ async fn main() -> Result<()> {
                                 "socket error",
                                 dry_run,
                             );
+                            scheduler::reset_warned();
                             tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
                             break;
                         }
