@@ -52,7 +52,11 @@ pub async fn get_active_window(path: &std::path::Path) -> Result<(u32, String, S
 
     Ok((
         window.pid,
-        window.address.trim_start_matches("0x").to_owned(),
+        window
+            .address
+            .strip_prefix("0x")
+            .unwrap_or(&window.address)
+            .to_owned(),
         window.class,
     ))
 }
@@ -119,7 +123,11 @@ mod tests {
         }
         Ok((
             window.pid,
-            window.address.trim_start_matches("0x").to_owned(),
+            window
+                .address
+                .strip_prefix("0x")
+                .unwrap_or(&window.address)
+                .to_owned(),
             window.class,
         ))
     }
@@ -161,5 +169,18 @@ mod tests {
         let json = r#"{"pid":1,"address":"ABCD","class":"x","title":"y"}"#;
         let (_, addr, _) = parse_window(json).unwrap();
         assert_eq!(addr, "ABCD");
+    }
+
+    #[test]
+    fn address_with_multiple_0x_only_strips_first() {
+        let json = r#"{"pid":99,"address":"0x0xABCD","class":"x","title":"y"}"#;
+        let (_, addr, _) = parse_window(json).unwrap();
+        assert_eq!(addr, "0xABCD");
+    }
+
+    #[test]
+    fn invalid_json_returns_json_error() {
+        let json = r#"{"pid":99,"address":"0x123",invalid}"#;
+        assert!(matches!(parse_window(json), Err(StutterError::Json(_))));
     }
 }

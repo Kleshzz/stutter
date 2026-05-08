@@ -249,4 +249,40 @@ mod tests {
             toml::from_str("focused_nice = -5\ndefault_nice = 0\n[apps]\nfirefox = {}").unwrap();
         assert_eq!(cfg.focused_nice_for("firefox"), -5);
     }
+
+    #[test]
+    fn per_app_with_null_focused_nice_falls_back_to_global() {
+        let mut apps = HashMap::new();
+        apps.insert("firefox".to_string(), AppConfig { focused_nice: None });
+        let cfg = Config {
+            focused_nice: -5,
+            default_nice: 0,
+            apps,
+        };
+        assert_eq!(cfg.focused_nice_for("firefox"), -5);
+    }
+
+    #[test]
+    fn validate_leaves_boundary_values_unchanged() {
+        let cfg = Config {
+            focused_nice: -20,
+            default_nice: 19,
+            ..Default::default()
+        }
+        .validate();
+        assert_eq!(cfg.focused_nice, -20);
+        assert_eq!(cfg.default_nice, 19);
+    }
+
+    #[test]
+    fn validate_clamps_just_outside_boundary_values() {
+        let cfg = Config {
+            focused_nice: -21,
+            default_nice: 20,
+            ..Default::default()
+        }
+        .validate();
+        assert_eq!(cfg.focused_nice, -20);
+        assert_eq!(cfg.default_nice, 19);
+    }
 }

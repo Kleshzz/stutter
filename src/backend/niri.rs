@@ -188,4 +188,23 @@ mod tests {
         };
         assert_eq!(event.class, "");
     }
+
+    #[test]
+    fn parses_multiple_events_independently() {
+        let event1 = r#"{"WindowFocusChanged":{"window":{"id":1,"pid":11}}}"#;
+        let event2 = r#"{"WindowFocusChanged":{"window":{"id":2,"pid":22}}}"#;
+
+        let parsed1 = parse_event(event1).unwrap();
+        let parsed2 = parse_event(event2).unwrap();
+
+        let FocusChange::Focused(e1) = parsed1 else {
+            panic!("expected Focused")
+        };
+        let FocusChange::Focused(e2) = parsed2 else {
+            panic!("expected Focused")
+        };
+
+        assert_eq!(e1.pid, 11);
+        assert_eq!(e2.pid, 22);
+    }
 }
