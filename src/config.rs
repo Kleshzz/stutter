@@ -120,16 +120,23 @@ default_nice = 0
 ";
 
     // atomically create the file only if it doesn't exist to avoid TOCTOU race
-    if std::fs::OpenOptions::new()
+    match std::fs::OpenOptions::new()
         .write(true)
         .create_new(true)
         .open(&path)
-        .is_ok()
     {
-        if let Err(e) = std::fs::write(&path, default_content) {
-            warn!("failed to write default config: {e}");
+        Ok(mut file) => {
+            use std::io::Write;
+            if let Err(e) = file.write_all(default_content.as_bytes()) {
+                warn!("failed to write default config: {e}");
+            }
+            return Config::default().validate();
         }
-        return Config::default().validate();
+        Err(e) if e.kind() != std::io::ErrorKind::AlreadyExists => {
+            warn!("failed to create config file: {e}");
+            return Config::default().validate();
+        }
+        Err(_) => {} // file already exists, fall through to read it
     }
 
     let Ok(content) = std::fs::read_to_string(&path) else {
