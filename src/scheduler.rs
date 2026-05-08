@@ -41,7 +41,7 @@ pub fn set_priority(pid: u32, nice: i32, dry_run: bool) -> Result<()> {
 
     if ret == -1 {
         let errno = unsafe { *libc::__errno_location() };
-        return handle_errno(pid, errno, "setting");
+        return handle_errno(pid, errno);
     }
 
     Ok(())
