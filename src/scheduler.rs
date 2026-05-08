@@ -10,7 +10,7 @@ pub fn reset_warned() {
     WARNED.store(false, std::sync::atomic::Ordering::Relaxed);
 }
 
-fn handle_errno(pid: u32, errno: i32, _action: &str) -> Result<()> {
+fn handle_errno(pid: u32, errno: i32) -> Result<()> {
     // ESRCH = process no longer exists, skip silently
     if errno == libc::ESRCH {
         debug!("pid {pid} not found (ESRCH), skipping");
