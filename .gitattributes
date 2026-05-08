@@ -1,4 +1,5 @@
 * text=auto eol=lf
 
-*.rs text diff=rust
-Cargo.lock text linguist-generated
+*.rs diff=rust
+*.md diff=markdown
+Cargo.lock linguist-generated
