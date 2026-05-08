@@ -36,7 +36,7 @@ jobs:
   lint:
     name: Lint (fmt + clippy)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
 
@@ -53,6 +53,7 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
+          shared-key: "stable"
           cache-on-failure: true
 
       - run: cargo +nightly fmt --all --check
@@ -60,9 +61,8 @@ jobs:
 
   build:
     name: Build & Test
-    needs: lint
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
 
@@ -72,10 +72,8 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
+          shared-key: "stable"
           cache-on-failure: true
-
-      - name: Build (debug)
-        run: cargo build --locked --all-targets
 
       - name: Run tests
         run: cargo test --locked --all-targets
@@ -83,7 +81,7 @@ jobs:
   msrv:
     name: MSRV
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
 
