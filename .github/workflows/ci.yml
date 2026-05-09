@@ -29,6 +29,7 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
   CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_TEST_DEBUG: 0
   CARGO_NET_RETRY: 10
   RUSTUP_MAX_RETRIES: 10
 
@@ -53,6 +54,7 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
           shared-key: "stable"
           cache-on-failure: true
 
@@ -72,6 +74,7 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
           shared-key: "stable"
           cache-on-failure: true
 
@@ -93,6 +96,8 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+          cache-targets: false
           cache-on-failure: true
 
       - run: cargo build --locked
